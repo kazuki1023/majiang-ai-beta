@@ -7,6 +7,6 @@
 [submodule "submodules/majiang-ui"]
 	path = submodules/majiang-ui
 	url = https://github.com/kazuki1023/majiang-ui.git
-[submodule "submodule/majiang-analog"]
-	path = submodule/majiang-analog
+[submodule "submodules/majiang-analog"]
+	path = submodules/majiang-analog
 	url = https://github.com/kazuki1023/majiang-analog.git
