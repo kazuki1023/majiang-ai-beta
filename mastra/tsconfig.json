@@ -8,7 +8,13 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "paths": {
+      "@kobalab/majiang-core": ["../submodules/majiang-core/lib"],
+      "@kobalab/majiang-ai": ["../submodules/majiang-ai/lib"],
+      "@kobalab/majiang-ui": ["../submodules/majiang-ui/lib"],
+      "@kobalab/majiang-analog": ["../submodules/majiang-analog/lib"]
+    }
   },
   "include": [
     "src/**/*"
