@@ -51,12 +51,7 @@ export async function evaluateDapaiCandidates(params: {
       const newShoupai = shoupai.clone().dapai(p);
       const x = Majiang.Util.xiangting(newShoupai);
       
-      // シャンテン数が悪化する場合はスキップ
-      if (x > n_xiangting) {
-        continue;
-      }
-      
-      // 期待値を計算
+      // 期待値を計算（シャンテン数が悪化しても評価する）
       const ev = player.eval_shoupai(newShoupai, paishu);
       
       // 待ち牌を取得
