@@ -24,7 +24,7 @@ export const evaluateShoupaiTool = createTool({
         }
         return val || [];
       })
-      .describe('ドラ表示牌（文字列または配列。例: "s3" または ["s3", "s4"]）'),
+      .describe('ドラ表示牌（文字列または配列。例: "s3" または ["s3", "s4"]）。重要: これは「ドラ表示牌」であり「実際のドラ」ではない。ドラ表示牌"s3"の場合、実際のドラは"s4"になる。suanpaiが自動的に変換するため、ドラ表示牌をそのまま入力すること。'),
     hongpai: z.union([z.boolean(), z.number()]).optional()
       .transform((val) => {
         if (typeof val === 'number') {
