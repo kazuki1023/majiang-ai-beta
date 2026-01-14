@@ -59,9 +59,18 @@ export async function evaluateDapaiCandidates(params: {
       
       // シャンテン数0の場合、和了可能な待ち牌のみ
       if (n_xiangting === 0) {
-        tingpai = tingpai.filter((tp: string) => 
-          player.get_defen(newShoupai.clone().zimo(tp))
-        );
+        tingpai = tingpai.filter((tp: string) => {
+          try {
+            const defen = player.get_defen(newShoupai.clone().zimo(tp));
+            // get_defenは和了できない場合、huleがundefinedになりエラーになる可能性がある
+            // その場合はfalseを返して待ち牌を除外
+            return defen != null && defen > 0;
+          } catch (error) {
+            // huleがundefinedの場合、hule.defenでエラーになる
+            // その場合は和了できない待ち牌として除外
+            return false;
+          }
+        });
       }
       
       // 待ち牌の残り枚数を計算
