@@ -31,8 +31,6 @@ export async function initializePlayer(params: {
     // CommonJSモジュールのためrequireを使用
     const Majiang = require('@kobalab/majiang-core');
     
-
-    // ここが怪しくて、変数を読み込めていないかもしれないので確認する
     // 常に最新版のPlayerを使用
     const PlayerClass = require('@kobalab/majiang-ai');
     const player = new PlayerClass();
