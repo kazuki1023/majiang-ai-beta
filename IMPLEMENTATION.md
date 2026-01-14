@@ -192,12 +192,12 @@ export const evaluateShoupaiTool = createTool({
   }),
   outputSchema: z.object({
     n_xiangting: z.number().describe('現在のシャンテン数'),
-    current_ev: z.number().describe('現在の期待値'),
+    current_ev: z.number().describe('現在の評価値'),
     recommended: z.string().describe('推奨打牌'),
     candidates: z.array(z.object({
       tile: z.string().describe('打牌候補'),
       n_xiangting: z.number().describe('打牌後のシャンテン数'),
-      ev: z.number().describe('期待値'),
+      ev: z.number().describe('評価値'),
       tingpai: z.array(z.string()).describe('待ち牌'),
       n_tingpai: z.number().describe('待ち牌の残り枚数'),
       weixian: z.number().optional().describe('危険度（リーチ時）'),
@@ -396,7 +396,7 @@ class ExplanationService {
     const selected = candidates.find(c => c.selected);
     if (selected) {
       explanation += `- 打牌後のシャンテン数: ${selected.n_xiangting}\n`;
-      explanation += `- 期待値: ${selected.ev.toFixed(2)}\n`;
+      explanation += `- 評価値: ${selected.ev.toFixed(2)}\n`;
       if (selected.tingpai.length > 0) {
         explanation += `- 待ち牌: ${selected.tingpai.join(', ')}\n`;
         explanation += `- 待ち牌の残り枚数: ${selected.n_tingpai}枚\n`;
@@ -414,7 +414,7 @@ class ExplanationService {
       .slice(0, 3);
     
     for (const candidate of top3) {
-      explanation += `- ${candidate.tile}: 期待値${candidate.ev.toFixed(2)}`;
+      explanation += `- ${candidate.tile}: 評価値${candidate.ev.toFixed(2)}`;
       if (candidate.weixian) {
         explanation += ` (危険度${candidate.weixian.toFixed(2)})`;
       }
@@ -491,7 +491,7 @@ console.log(response.text);
 //     推奨打牌: s3
 //     【評価理由】
 //     - 打牌後のシャンテン数: 1
-//     - 期待値: 125.50
+//     - 評価値: 125.50
 //     ..."
 ```
 

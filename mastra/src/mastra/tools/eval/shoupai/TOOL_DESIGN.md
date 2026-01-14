@@ -14,13 +14,13 @@
 
 ### 2. 基本評価フェーズ
 - 現在のシャンテン数計算
-- 現在の期待値計算
+- 現在の評価値計算
 
 ### 3. 打牌候補評価フェーズ
 - 打牌可能な牌の取得
 - 各打牌候補について：
   - 打牌後のシャンテン数
-  - 期待値
+  - 評価値
   - 待ち牌
   - 待ち牌の残り枚数
 
@@ -45,7 +45,7 @@ mastra/src/mastra/tools/
     shoupai/
       ├── initialize-player.ts          # Player初期化
       ├── calculate-xiangting.ts        # シャンテン数計算
-      ├── calculate-ev.ts               # 期待値計算
+      ├── calculate-ev.ts               # 評価値計算
       ├── evaluate-dapai-candidates.ts  # 打牌候補の評価
       ├── evaluate-gang-candidates.ts   # 槓候補の評価
       ├── evaluate-tingpai.ts          # 待ち牌の評価
@@ -113,7 +113,7 @@ mastra/src/mastra/tools/
 ```
 
 ### 3. calculate-ev.ts
-**役割**: 手牌の期待値を計算
+**役割**: 手牌の評価値を計算
 
 **入力:**
 ```typescript
@@ -127,7 +127,7 @@ mastra/src/mastra/tools/
 **出力:**
 ```typescript
 {
-  ev: number;  // 期待値
+  ev: number;  // 評価値
 }
 ```
 
@@ -195,7 +195,7 @@ mastra/src/mastra/tools/
   candidates: Array<{
     tile: string;         // 打牌候補
     n_xiangting: number;  // 打牌後のシャンテン数
-    ev: number;           // 期待値
+    ev: number;           // 評価値
     tingpai: string[];     // 待ち牌
     n_tingpai: number;    // 待ち牌の残り枚数
   }>;
@@ -222,7 +222,7 @@ mastra/src/mastra/tools/
   candidates: Array<{
     mianzi: string;       // 槓の面子
     n_xiangting: number;  // 槓後のシャンテン数
-    ev: number;           // 期待値
+    ev: number;           // 評価値
     tingpai: string[];    // 待ち牌
     n_tingpai: number;    // 待ち牌の残り枚数
   }>;
@@ -239,7 +239,7 @@ mastra/src/mastra/tools/
   shoupai: Shoupai;
   paishu: Paishu;
   n_xiangting: number;
-  max_ev: number;  // 通常評価の最大期待値
+  max_ev: number;  // 通常評価の最大評価値
 }
 ```
 
@@ -276,7 +276,7 @@ mastra/src/mastra/tools/
   candidates: Array<{
     mianzi: string;       // 副露の面子
     n_xiangting: number;  // 副露後のシャンテン数
-    ev: number;           // 期待値
+    ev: number;           // 評価値
     recommended_dapai: string;  // 副露後の推奨打牌
     tingpai: string[];
     n_tingpai: number;
@@ -341,7 +341,7 @@ mastra/src/mastra/tools/
 ### Phase 1: 基本機能
 1. `initialize-player.ts` - Player初期化
 2. `calculate-xiangting.ts` - シャンテン数計算
-3. `calculate-ev.ts` - 期待値計算
+3. `calculate-ev.ts` - 評価値計算
 4. `evaluate-dapai-candidates.ts` - 打牌候補評価
 5. `index.ts` - メイン統合ツール
 

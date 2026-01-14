@@ -53,7 +53,7 @@ const evaluateBasicInputSchema = z.object({
 
 const evaluateBasicOutputSchema = z.object({
   n_xiangting: z.number().describe('シャンテン数'),
-  ev: z.number().describe('期待値'),
+  ev: z.number().describe('評価値'),
   player: z.any().describe('Playerインスタンス'),
   shoupai: z.any().describe('手牌インスタンス'),
   paishu: z.any().describe('牌山の残り枚数'),
@@ -64,27 +64,27 @@ const evaluateDapaiCandidatesInputSchema = z.object({
   shoupai: z.any().describe('手牌インスタンス'),
   paishu: z.any().describe('牌山の残り枚数'),
   n_xiangting: z.number().describe('シャンテン数'),
-  ev: z.number().describe('期待値'),
+  ev: z.number().describe('評価値'),
 });
 
 const evaluateDapaiCandidatesOutputSchema = z.object({
   n_xiangting: z.number().describe('シャンテン数'),
-  ev: z.number().describe('期待値'),
+  ev: z.number().describe('評価値'),
   candidates: z.array(z.object({
     tile: z.string().describe('打牌候補'),
     n_xiangting: z.number().describe('打牌後のシャンテン数'),
-    ev: z.number().describe('期待値'),
+    ev: z.number().describe('評価値'),
   })),
   recommended: z.string().describe('推奨打牌'),
 });
 
 const evaluateShoupaiOutputSchema = z.object({
   n_xiangting: z.number().describe('シャンテン数'),
-  ev: z.number().describe('期待値'),
+  ev: z.number().describe('評価値'),
   candidates: z.array(z.object({
     tile: z.string().describe('打牌候補'),
     n_xiangting: z.number().describe('打牌後のシャンテン数'),
-    ev: z.number().describe('期待値'),
+    ev: z.number().describe('評価値'),
   })),
   recommended: z.string().describe('推奨打牌'),
 });
@@ -127,7 +127,7 @@ const calculatePaishuStep = createStep({
 
 const evaluateBasicStep = createStep({
   id: 'evaluate-basic',
-  description: '現在のシャンテン数と期待値を計算',
+  description: '現在のシャンテン数と評価値を計算',
   inputSchema: evaluateBasicInputSchema,
   outputSchema: evaluateBasicOutputSchema,
   execute: async ({ inputData }) => {

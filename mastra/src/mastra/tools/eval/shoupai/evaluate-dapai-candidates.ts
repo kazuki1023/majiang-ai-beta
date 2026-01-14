@@ -51,7 +51,7 @@ export async function evaluateDapaiCandidates(params: {
       const newShoupai = shoupai.clone().dapai(p);
       const x = Majiang.Util.xiangting(newShoupai);
       
-      // 期待値を計算（シャンテン数が悪化しても評価する）
+      // 評価値を計算（シャンテン数が悪化しても評価する）
       const ev = player.eval_shoupai(newShoupai, paishu);
       
       // 待ち牌を取得
@@ -94,14 +94,14 @@ export async function evaluateDapaiCandidates(params: {
       
       candidates.push(candidate);
       
-      // 最大期待値の候補を記録
+      // 最大評価値の候補を記録
       if (ev > maxEv) {
         maxEv = ev;
         recommended = formatTile(p);
       }
     }
     
-    // 期待値でソート
+    // 評価値でソート
     candidates.sort((a, b) => b.ev - a.ev);
     
     return {
@@ -123,7 +123,7 @@ export const evaluateDapaiCandidatesTool = createTool({
     candidates: z.array(z.object({
       tile: z.string().describe('打牌候補'),
       n_xiangting: z.number().describe('打牌後のシャンテン数'),
-      ev: z.number().describe('期待値'),
+      ev: z.number().describe('評価値'),
       tingpai: z.array(z.string()).describe('待ち牌'),
       n_tingpai: z.number().describe('待ち牌の残り枚数'),
     })),

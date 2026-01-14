@@ -48,7 +48,7 @@ export const evaluateShoupaiTool = createTool({
   outputSchema: z.object({
     current: z.object({
       n_xiangting: z.number().describe('現在のシャンテン数'),
-      ev: z.number().describe('現在の期待値'),
+      ev: z.number().describe('現在の評価値'),
     }),
     dapai_candidates: z.array(z.object({
       tile: z.string(),
@@ -80,7 +80,7 @@ export const evaluateShoupaiTool = createTool({
       heinfo: context.heinfo,
     });
     
-    // 3. 基本評価（シャンテン数と期待値）
+    // 3. 基本評価（シャンテン数と評価値）
     const { n_xiangting, ev: currentEv } = await evaluateBasic({
       player,
       shoupai: player.shoupai,
@@ -120,6 +120,6 @@ export { calculatePaishu, calculatePaishuTool } from './calculate-paishu';
 export { calculateXiangting, calculateXiangtingTool } from './calculate-xiangting';
 export { evaluateBasic, evaluateBasicTool } from './evaluate-basic';
 export { evaluateDapaiCandidates, evaluateDapaiCandidatesTool } from './evaluate-dapai-candidates';
-export { initializePlayer, initializePlayerTool } from './initialize-player';
 export { formatTiles, formatTilesTool } from './format-tiles';
+export { initializePlayer, initializePlayerTool } from './initialize-player';
 
