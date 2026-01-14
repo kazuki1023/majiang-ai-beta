@@ -5,9 +5,8 @@
 
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { calculateEv } from './calculate-ev';
 import { calculatePaishu } from './calculate-paishu';
-import { calculateXiangting } from './calculate-xiangting';
+import { evaluateBasic } from './evaluate-basic';
 import { evaluateDapaiCandidates } from './evaluate-dapai-candidates';
 import { initializePlayer } from './initialize-player';
 
@@ -18,11 +17,31 @@ export const evaluateShoupaiTool = createTool({
     shoupai: z.string().describe('手牌文字列 (例: "m123p1234789s3388")'),
     zhuangfeng: z.number().optional().describe('場風 (0-3)'),
     menfeng: z.number().optional().describe('自風 (0-3)'),
-    baopai: z.array(z.string()).optional().describe('ドラ表示牌'),
-    hongpai: z.boolean().optional().describe('赤牌有無'),
+    baopai: z.union([z.array(z.string()), z.string()]).optional()
+      .transform((val) => {
+        if (typeof val === 'string') {
+          return val.split(',').filter(Boolean);
+        }
+        return val || [];
+      })
+      .describe('ドラ表示牌（文字列または配列。例: "s3" または ["s3", "s4"]）'),
+    hongpai: z.union([z.boolean(), z.number()]).optional()
+      .transform((val) => {
+        if (typeof val === 'number') {
+          return val !== 0;
+        }
+        return val ?? true;
+      })
+      .describe('赤牌有無（booleanまたは数値。0以外はtrue）'),
     xun: z.number().optional().describe('巡目'),
-    heinfo: z.string().optional().describe('捨て牌情報（オプション）'),
-    legacy: z.string().optional().describe('使用するAI実装 (例: "0504")'),
+    heinfo: z.union([z.string(), z.object({})]).optional()
+      .transform((val) => {
+        if (typeof val === 'object' && val !== null && Object.keys(val).length === 0) {
+          return undefined;
+        }
+        return typeof val === 'string' ? val : undefined;
+      })
+      .describe('捨て牌情報（オプション）'),
     include_gang: z.boolean().optional().describe('槓候補も評価するか'),
     include_backtrack: z.boolean().optional().describe('バックトラック評価も含めるか'),
   }),
@@ -51,7 +70,6 @@ export const evaluateShoupaiTool = createTool({
       hongpai: context.hongpai,
       xun: context.xun,
       heinfo: context.heinfo,
-      legacy: context.legacy,
     });
     
     // 2. 牌山の残り枚数を計算
@@ -62,13 +80,8 @@ export const evaluateShoupaiTool = createTool({
       heinfo: context.heinfo,
     });
     
-    // 3. 現在のシャンテン数を計算
-    const { n_xiangting } = await calculateXiangting({
-      shoupai: player.shoupai,
-    });
-    
-    // 4. 現在の期待値を計算
-    const { ev: currentEv } = await calculateEv({
+    // 3. 基本評価（シャンテン数と期待値）
+    const { n_xiangting, ev: currentEv } = await evaluateBasic({
       player,
       shoupai: player.shoupai,
       paishu,
@@ -81,6 +94,8 @@ export const evaluateShoupaiTool = createTool({
       paishu,
       n_xiangting,
     });
+    console.log('candidates', candidates);
+    console.log('recommended', recommended);
     
     // 推奨打牌にselectedフラグを追加
     const dapaiCandidates = candidates.map((candidate) => ({
@@ -103,6 +118,7 @@ export const evaluateShoupaiTool = createTool({
 export { calculateEv, calculateEvTool } from './calculate-ev';
 export { calculatePaishu, calculatePaishuTool } from './calculate-paishu';
 export { calculateXiangting, calculateXiangtingTool } from './calculate-xiangting';
+export { evaluateBasic, evaluateBasicTool } from './evaluate-basic';
 export { evaluateDapaiCandidates, evaluateDapaiCandidatesTool } from './evaluate-dapai-candidates';
 export { initializePlayer, initializePlayerTool } from './initialize-player';
 
