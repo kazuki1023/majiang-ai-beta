@@ -1,38 +1,10 @@
 /**
  * 牌の視覚化ツール
- * 牌の文字列をUnicode絵文字や読みやすい形式に変換
+ * 牌の文字列を読みやすい形式に変換
  */
 
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-
-/**
- * 牌のUnicode絵文字マッピング
- * 萬子: 🀇(m1) ～ 🀏(m9)
- * 筒子: 🀐(p1) ～ 🀘(p9)
- * 索子: 🀙(s1) ～ 🀡(s9)
- * 字牌: 🀀(z1=東) 🀁(z2=南) 🀂(z3=西) 🀃(z4=北) 🀄(z5=白) 🀅(z6=發) 🀆(z7=中)
- * 赤牌: 🀋(m0=m5赤) 🀔(p0=p5赤) 🀝(s0=s5赤)
- */
-const TILE_EMOJI_MAP: Record<string, string> = {
-  // 萬子
-  'm1': '🀇', 'm2': '🀈', 'm3': '🀉', 'm4': '🀊', 'm5': '🀋', 'm6': '🀌', 'm7': '🀍', 'm8': '🀎', 'm9': '🀏',
-  'm0': '🀋', // 赤五萬
-  // 筒子
-  's1': '🀐', 's2': '🀑', 's3': '🀒', 's4': '🀓', 's5': '🀔', 's6': '🀕', 's7': '🀖', 's8': '🀗', 's9': '🀘',
-  's0': '🀔', // 赤五筒
-  // 索子
-  'p1': '🀙', 'p2': '🀚', 'p3': '🀛', 'p4': '🀜', 'p5': '🀝', 'p6': '🀞', 'p7': '🀟', 'p8': '🀠', 'p9': '🀡',
-  'p0': '🀝', // 赤五索
-  // 字牌
-  'z1': '🀀', // 東
-  'z2': '🀁', // 南
-  'z3': '🀂', // 西
-  'z4': '🀃', // 北
-  'z5': '🀄', // 白
-  'z6': '🀅', // 發
-  'z7': '🀆', // 中
-};
 
 /**
  * 牌の読みやすい名前マッピング
@@ -52,14 +24,6 @@ const TILE_NAME_MAP: Record<string, string> = {
 };
 
 /**
- * 牌の文字列を絵文字に変換
- */
-function tileToEmoji(tile: string): string {
-  const normalized = tile.substring(0, 2);
-  return TILE_EMOJI_MAP[normalized] || tile;
-}
-
-/**
  * 牌の文字列を読みやすい名前に変換
  */
 function tileToName(tile: string): string {
@@ -70,7 +34,7 @@ function tileToName(tile: string): string {
 /**
  * 手牌文字列を解析して視覚化
  */
-function formatShoupai(shoupaiStr: string, format: 'emoji' | 'name' | 'both' = 'both'): string {
+function formatShoupai(shoupaiStr: string): string {
   const Majiang = require('@kobalab/majiang-core');
   
   try {
@@ -89,13 +53,7 @@ function formatShoupai(shoupaiStr: string, format: 'emoji' | 'name' | 'both' = '
       
       for (const n of numbers) {
         const tile = s + n;
-        if (format === 'emoji') {
-          result.push(tileToEmoji(tile));
-        } else if (format === 'name') {
-          result.push(tileToName(tile));
-        } else {
-          result.push(`${tileToEmoji(tile)}${tileToName(tile)}`);
-        }
+        result.push(tileToName(tile));
       }
       
       // リーチマーク
@@ -132,16 +90,8 @@ function formatShoupai(shoupaiStr: string, format: 'emoji' | 'name' | 'both' = '
 /**
  * 牌の配列を視覚化
  */
-function formatTileArray(tiles: string[], format: 'emoji' | 'name' | 'both' = 'both'): string {
-  return tiles.map(tile => {
-    if (format === 'emoji') {
-      return tileToEmoji(tile);
-    } else if (format === 'name') {
-      return tileToName(tile);
-    } else {
-      return `${tileToEmoji(tile)}${tileToName(tile)}`;
-    }
-  }).join(' ');
+function formatTileArray(tiles: string[]): string {
+  return tiles.map(tile => tileToName(tile)).join(' ');
 }
 
 /**
@@ -150,27 +100,20 @@ function formatTileArray(tiles: string[], format: 'emoji' | 'name' | 'both' = 'b
 export function formatTiles(params: {
   tiles?: string[];
   shoupai?: string;
-  format?: 'emoji' | 'name' | 'both';
 }): {
   formatted: string;
-  format: 'emoji' | 'name' | 'both';
 } {
-  const format = params.format || 'both';
-  
   if (params.shoupai) {
     return {
-      formatted: formatShoupai(params.shoupai, format),
-      format,
+      formatted: formatShoupai(params.shoupai),
     };
   } else if (params.tiles && params.tiles.length > 0) {
     return {
-      formatted: formatTileArray(params.tiles, format),
-      format,
+      formatted: formatTileArray(params.tiles),
     };
   } else {
     return {
       formatted: '',
-      format,
     };
   }
 }
@@ -180,22 +123,18 @@ export function formatTiles(params: {
  */
 export const formatTilesTool = createTool({
   id: 'format-tiles',
-  description: '牌の文字列をUnicode絵文字や読みやすい形式に変換します。手牌文字列や牌の配列を視覚的に表現できます。',
+  description: '牌の文字列を読みやすい形式に変換します。手牌文字列や牌の配列を視覚的に表現できます。',
   inputSchema: z.object({
     tiles: z.array(z.string()).optional().describe('牌の配列（例: ["m1", "m2", "s3"]）'),
     shoupai: z.string().optional().describe('手牌文字列（例: "m123p1234789s3388"）'),
-    format: z.enum(['emoji', 'name', 'both']).optional()
-      .describe('出力形式: "emoji"=絵文字のみ, "name"=名前のみ, "both"=絵文字+名前')
   }),
   outputSchema: z.object({
-    formatted: z.string().describe('視覚化された牌の文字列'),
-    format: z.enum(['emoji', 'name', 'both']).default('name').describe('使用された出力形式'),
+    formatted: z.string().describe('視覚化された牌の文字列（名前形式）'),
   }),
   execute: async ({ context }) => {
     return formatTiles({
       tiles: context.tiles,
       shoupai: context.shoupai,
-      format: context.format,
     });
   },
 });
