@@ -27,27 +27,14 @@ export async function initializePlayer(params: {
   hongpai?: boolean;
   xun?: number;
   heinfo?: string;
-  legacy?: string;
 }) {
     // CommonJSモジュールのためrequireを使用
     const Majiang = require('@kobalab/majiang-core');
     
-    // Playerクラスの選択
-    let PlayerClass;
-    if (params.legacy && /^\d{4}$/.test(params.legacy)) {
-      // legacy指定がある場合
-      const path = require('path');
-      const legacyPath = path.join(
-        __dirname,
-        '@kobalab/majiang-ai/legacy',
-        `player-${params.legacy}.js`
-      );
-      PlayerClass = require(legacyPath);
-    } else {
-      // 最新版を使用
-      PlayerClass = require('@kobalab/majiang-ai');
-    }
 
+    // ここが怪しくて、変数を読み込めていないかもしれないので確認する
+    // 常に最新版のPlayerを使用
+    const PlayerClass = require('@kobalab/majiang-ai');
     const player = new PlayerClass();
 
     // ルール設定
@@ -127,7 +114,6 @@ export const initializePlayerTool = createTool({
     hongpai: z.boolean().optional().describe('赤牌有無'),
     xun: z.number().optional().describe('巡目'),
     heinfo: z.string().optional().describe('捨て牌情報（オプション）'),
-    legacy: z.string().optional().describe('使用するAI実装 (例: "0504")'),
   }),
   outputSchema: z.object({
     player: z.any().describe('初期化されたPlayerインスタンス'),
