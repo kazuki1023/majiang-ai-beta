@@ -5,10 +5,11 @@ import { PinoLogger } from '@mastra/loggers';
 import { majiangAnalysisAgent } from './agents/majiang-analysis-agent';
 import { weatherAgent } from './agents/weather-agent';
 import { completenessScorer, toolCallAppropriatenessScorer, translationScorer } from './scorers/weather-scorer';
+import { evaluateShoupaiWorkflow } from './workflows/evaluate-shoupai';
 import { weatherWorkflow } from './workflows/weather-workflow';
 
 export const mastra = new Mastra({
-  workflows: { weatherWorkflow },
+  workflows: { weatherWorkflow, evaluateShoupaiWorkflow },
   agents: { weatherAgent, majiangAnalysisAgent },
   scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
   storage: new LibSQLStore({

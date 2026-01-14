@@ -121,4 +121,5 @@ export { calculateXiangting, calculateXiangtingTool } from './calculate-xiangtin
 export { evaluateBasic, evaluateBasicTool } from './evaluate-basic';
 export { evaluateDapaiCandidates, evaluateDapaiCandidatesTool } from './evaluate-dapai-candidates';
 export { initializePlayer, initializePlayerTool } from './initialize-player';
+export { formatTiles, formatTilesTool } from './format-tiles';
 
