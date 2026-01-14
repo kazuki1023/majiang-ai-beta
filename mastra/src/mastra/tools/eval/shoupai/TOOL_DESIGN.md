@@ -71,7 +71,6 @@ mastra/src/mastra/tools/
   hongpai?: boolean;
   xun?: number;
   heinfo?: string;  // 捨て牌情報（オプション）
-  legacy?: string;  // 使用するAI実装
 }
 ```
 
@@ -90,7 +89,6 @@ mastra/src/mastra/tools/
 ```
 
 **処理内容:**
-- Playerクラスの選択（legacy指定があればそれを使用）
 - ルール設定
 - qipai設定
 - ドラ設定
@@ -307,7 +305,6 @@ mastra/src/mastra/tools/
   hongpai?: boolean;
   xun?: number;
   heinfo?: string;
-  legacy?: string;
   include_gang?: boolean;      // 槓候補も評価するか
   include_backtrack?: boolean; // バックトラック評価も含めるか
 }
