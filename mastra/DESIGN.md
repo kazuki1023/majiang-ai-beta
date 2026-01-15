@@ -87,7 +87,7 @@
 ### 5. ディレクトリ構成案
 
 ```
-majiang-ai/
+mastra/
 ├── src/
 │   ├── agents/
 │   │   ├── paipu-analyzer.ts      # 牌譜解析エージェント
