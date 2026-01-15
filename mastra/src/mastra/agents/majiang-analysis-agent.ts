@@ -1,6 +1,6 @@
 import { Agent } from '@mastra/core/agent';
-import { LibSQLStore } from '@mastra/libsql';
-import { Memory } from '@mastra/memory';
+// import { LibSQLStore } from '@mastra/libsql';
+// import { Memory } from '@mastra/memory';
 import { evaluateShoupaiTool, formatTilesTool } from '../tools/eval/shoupai';
 
 export const majiangAnalysisAgent = new Agent({
@@ -65,9 +65,9 @@ export const majiangAnalysisAgent = new Agent({
   `,
   model: 'openai/gpt-5.1',
   tools: { evaluateShoupaiTool, formatTilesTool },
-  memory: new Memory({
-    storage: new LibSQLStore({
-      url: 'file:../mastra.db', // path is relative to the .mastra/output directory
-    }),
-  }),
+  // memory: new Memory({
+  //   storage: new LibSQLStore({
+  //     url: 'file:../mastra.db', // path is relative to the .mastra/output directory
+  //   }),
+  // }),
 });
