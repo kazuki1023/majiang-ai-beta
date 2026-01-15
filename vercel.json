@@ -1,16 +1,5 @@
 {
-  "version": 2,
   "buildCommand": "cd mastra && npm run build",
   "outputDirectory": "mastra/.vercel/output",
-  "installCommand": "cd mastra && npm install",
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/"
-    }
-  ]
+  "installCommand": "cd mastra && npm install"
 }
