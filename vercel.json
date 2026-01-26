@@ -1,5 +1,0 @@
-{
-  "buildCommand": "cd mastra && npm run build",
-  "outputDirectory": "mastra/.vercel/output",
-  "installCommand": "cd mastra && npm install"
-}
