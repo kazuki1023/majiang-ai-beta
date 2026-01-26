@@ -123,6 +123,7 @@ gcloud auth application-default login
 | [README.md](./README.md)                                                 | このファイル（GCP環境の概要） |
 | [iam-service-account.md](./iam-service-account.md)                       | サービスアカウントとIAMの説明 |
 | [application-default-credentials.md](./application-default-credentials.md) | ADC（ローカル認証）の説明     |
+| [cloud-run-docker.md](./cloud-run-docker.md)                             | Cloud RunとDockerの仕組み     |
 
 ---
 
