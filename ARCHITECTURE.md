@@ -59,7 +59,7 @@ Mastraは以下のREST APIを提供します：
 
 ### Agents
 
-- `POST /api/agents/{agentName}` - エージェントの実行
+- `POST /api/agents/{agentName}/generate` - エージェントの実行
 - `POST /api/agents/{agentName}/stream` - ストリーミング実行
 
 ### Workflows
@@ -73,7 +73,7 @@ Mastraは以下のREST APIを提供します：
 ### 例: majiangAnalysisAgentの呼び出し
 
 ```typescript
-POST /api/agents/majiangAnalysisAgent
+POST /api/agents/majiangAnalysisAgent/generate
 Content-Type: application/json
 
 {
@@ -147,8 +147,8 @@ majiang-ai/
 - **リージョン**: asia-northeast1（東京）
 - **URL**: `https://majiang-ai-api-xxxxx.a.run.app` (例)
 - **エンドポイント**:
-  - `POST /api/agents/majiangAnalysisAgent`
-  - `POST /api/agents/imageRecognitionAgent`
+  - `POST /api/agents/majiangAnalysisAgent/generate`
+  - `POST /api/agents/imageRecognitionAgent/generate`
   - `POST /api/workflows/evaluateShoupai`
   - `GET /api/tools`
 
@@ -182,7 +182,7 @@ sequenceDiagram
     participant Lib as majiang-ai
 
     User->>UI: 手牌を入力
-    UI->>API: POST /api/agents/majiangAnalysisAgent
+    UI->>API: POST /api/agents/majiangAnalysisAgent/generate
     API->>Lib: evaluateShoupaiTool
     Lib-->>API: 評価結果
     API->>Gemini: 説明生成
@@ -269,21 +269,42 @@ sequenceDiagram
 
 ### Mastra API
 
+**方法1: プロジェクトルートからビルド（推奨）**
+
+プロジェクトルート（`majiang-ai/`）から実行する場合:
+
 ```dockerfile
+# mastra/Dockerfile
 FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci --only=production
+# 依存関係のインストール
+COPY mastra/package*.json ./
+# ローカル依存関係（submodules）も含めるため、開発依存関係もインストール
+RUN npm ci
 
-COPY . .
+# ソースコードとsubmodulesのコピー
+COPY mastra/ ./
+COPY submodules/ ./submodules/
+
+# ビルド実行
 RUN npm run build
 
+# 環境変数設定
 ENV PORT=8080
+ENV NODE_ENV=production
+
 EXPOSE 8080
 
 CMD ["npm", "start"]
+```
+
+ビルドコマンド:
+
+```bash
+# プロジェクトルートから実行
+docker build -f mastra/Dockerfile -t majiang-ai-api:local .
 ```
 
 ### Next.js Frontend
@@ -384,10 +405,245 @@ images:
 
 ### Phase 2: Mastra APIのCloud Run移行
 
-- [ ] Dockerfileの作成
-- [ ] `VercelDeployer`の削除
-- [ ] Cloud Runへのデプロイ
-- [ ] 動作確認
+#### 2.1 事前準備
+
+- [ ] **GCP環境の確認**
+  - [x] プロジェクトID確認: `gcloud config get-value project` → `majiang-ai-beta`
+  - [x] リージョン確認: `gcloud config get-value run/region` → `asia-northeast1`
+  - [x] Artifact Registry API有効化確認
+    ```bash
+    gcloud services enable artifactregistry.googleapis.com
+    ```
+  - [x] サービスアカウント確認: `majiang-ai-sa@majiang-ai-beta.iam.gserviceaccount.com`
+    - [x] `roles/storage.objectViewer` ロール付与済み
+    - [x] `roles/storage.objectCreator` ロール付与済み
+
+- [x] **ローカル開発環境の確認**
+  - [x] ADC（Application Default Credentials）設定済み
+    ```bash
+    gcloud auth application-default login --project=majiang-ai-beta
+    ```
+  - [x] 環境変数の確認（`mastra/.env`）
+    - `GOOGLE_API_KEY`: Gemini APIキー
+    - `GOOGLE_CLOUD_PROJECT=majiang-ai-beta`
+    - `GCS_BUCKET=majiang-ai-images`
+
+#### 2.2 Dockerfileの作成
+
+- [x] **`mastra/Dockerfile` の作成**
+  - [x] ベースイメージ: `node:20-alpine`（Node.js 22.13.0以上が必要だが、20で動作確認）
+  - [x] 作業ディレクトリ: `/app`
+  - [x] 依存関係のインストール
+    - `mastra/package.json` と `mastra/package-lock.json` をコピー
+    - `npm ci` で依存関係をインストール（submodulesも含むため開発依存関係も必要）
+  - [x] ソースコードとsubmodulesのコピー
+    - `mastra/` ディレクトリ全体をコピー
+    - `submodules/` ディレクトリをコピー（ローカル依存関係）
+  - [x] ビルド実行
+    - `npm run build` でTypeScriptをコンパイル
+  - [x] 環境変数設定
+    - `PORT=8080`（Cloud Runのデフォルトポート）
+    - `NODE_ENV=production`
+  - [x] ポート公開: `EXPOSE 8080`
+  - [x] 起動コマンド: `CMD ["npm", "start"]`（`mastra start`を実行）
+
+  **注意**: Dockerfileはプロジェクトルートからビルドすることを想定（`docker build -f mastra/Dockerfile .`）
+
+- [x] **`.dockerignore` の作成（オプション、プロジェクトルートに配置）**
+  - [x] `node_modules/`
+  - [x] `.env`
+  - [x] `.git/`
+  - [x] `*.log`
+  - [x] `.cursor/`
+  - [x] `docs/`
+
+#### 2.3 VercelDeployerの削除
+
+- [x] **`mastra/src/mastra/index.ts` の修正**
+  - [x] `VercelDeployer` のインポートを削除
+    ```typescript
+    // 削除: import { VercelDeployer } from '@mastra/deployer-vercel';
+    ```
+  - [x] `deployer` オプションを削除
+    ```typescript
+    // 削除: deployer: new VercelDeployer({ ... })
+    ```
+
+- [x] **`mastra/package.json` の修正**
+  - [x] `@mastra/deployer-vercel` を依存関係から削除
+    ```bash
+    npm uninstall @mastra/deployer-vercel
+    ```
+
+- [x] **`vercel.json` の確認・削除（存在する場合）**
+  - [x] プロジェクトルートの `vercel.json` を確認
+  - [x] Mastra API用の設定があれば削除
+
+#### 2.4 ローカルでのDockerビルド・動作確認
+
+- [x] **Dockerイメージのビルド**
+
+  ```bash
+  # プロジェクトルートから実行
+  docker build -f mastra/Dockerfile -t majiang-ai-api:local .
+  ```
+
+- [x] **ローカルでコンテナ実行**
+
+  ```bash
+  docker run -p 8080:8080 \
+    -e GOOGLE_API_KEY="your-api-key" \
+    -e GOOGLE_CLOUD_PROJECT="majiang-ai-beta" \
+    -e GCS_BUCKET="majiang-ai-images" \
+    majiang-ai-api:local
+  ```
+
+- [x] **動作確認**
+  - [x] ヘルスチェック: `curl http://localhost:8080/api/tools`
+  - [x] エージェント実行テスト:
+  - [x] ログ確認: エラーがないことを確認
+
+#### 2.5 Artifact Registryの準備
+
+- [x] **リポジトリの作成**
+
+  ```bash
+  gcloud artifacts repositories create majiang-ai-repo \
+    --repository-format=docker \
+    --location=asia-northeast1 \
+    --description="Docker images for majiang-ai"
+  ```
+
+- [x] **認証設定**
+  ```bash
+  gcloud auth configure-docker asia-northeast1-docker.pkg.dev
+  ```
+
+#### 2.6 Cloud Runへのデプロイ
+
+- [x] **Dockerイメージのビルド・プッシュ**
+
+  ```bash
+  # プロジェクトルートから実行
+
+  # 重要: Cloud Runはx86_64アーキテクチャを使用するため、--platformを指定
+  # Apple Silicon (ARM64) でビルドする場合は必須
+  docker build --platform linux/amd64 \
+    -f mastra/Dockerfile \
+    -t asia-northeast1-docker.pkg.dev/majiang-ai-beta/majiang-ai-repo/majiang-ai-api:latest .
+
+  # Artifact Registryにプッシュ
+  docker push asia-northeast1-docker.pkg.dev/majiang-ai-beta/majiang-ai-repo/majiang-ai-api:latest
+  ```
+
+  **注意**:
+  - Apple Silicon (M1/M2/M3) Macでビルドする場合は、`--platform linux/amd64`を必ず指定してください
+  - これにより、Cloud Runが要求するx86_64アーキテクチャのイメージがビルドされます
+  - ビルド時間は長くなりますが、Cloud Runで正しく動作します
+
+- [x] **Cloud Runサービスのデプロイ**
+
+  ```bash
+  gcloud run deploy majiang-ai-api \
+    --image asia-northeast1-docker.pkg.dev/majiang-ai-beta/majiang-ai-repo/majiang-ai-api:latest \
+    --region asia-northeast1 \
+    --platform managed \
+    --allow-unauthenticated \
+    --service-account majiang-ai-sa@majiang-ai-beta.iam.gserviceaccount.com \
+    --set-env-vars GOOGLE_API_KEY="your-api-key",GOOGLE_CLOUD_PROJECT="majiang-ai-beta",GCS_BUCKET="majiang-ai-images" \
+    --memory 1Gi \
+    --cpu 1 \
+    --timeout 300 \
+    --max-instances 10 \
+    --min-instances 0 \
+    --port 8080
+  ```
+
+  **重要**: Apple Silicon Macでビルドする場合は、`--platform linux/amd64`を指定してビルドすること
+
+- [x] **デプロイ結果の確認**
+  - [x] サービスURLの取得: `gcloud run services describe majiang-ai-api --region asia-northeast1 --format 'value(status.url)'`
+  - [x] URLをメモ（例: `https://majiang-ai-api-bjl7enjnaq-an.a.run.app`）
+
+#### 2.7 動作確認
+
+- [x] **APIエンドポイントのテスト**
+  - [x] ツール一覧取得
+    ```bash
+    curl https://majiang-ai-api-xxxxx.a.run.app/api/tools
+    ```
+  - [x] エージェント実行テスト
+
+    ```bash
+    # 基本的なリクエスト
+    curl -X POST https://majiang-ai-api-xxxxx.a.run.app/api/agents/majiangAnalysisAgent/generate \
+      -H "Content-Type: application/json" \
+      -d '{
+        "messages": [
+          {
+            "role": "user",
+            "content": "手牌: m123p1234789s3388 の最適な打牌を教えてください"
+          }
+        ]
+      }' | jq '.'
+
+    # より詳細な分析リクエスト
+    curl -X POST https://majiang-ai-api-xxxxx.a.run.app/api/agents/majiangAnalysisAgent/generate \
+      -H "Content-Type: application/json" \
+      -d '{
+        "messages": [
+          {
+            "role": "user",
+            "content": "手牌: m123p1234789s3388 の最適な打牌を教えてください。現在のシャンテン数と評価値、打牌候補の評価も知りたいです。"
+          }
+        ]
+      }' | jq '.'
+    ```
+
+  - [ ] ワークフロー実行テスト（オプション）
+    ```bash
+    curl -X POST https://majiang-ai-api-xxxxx.a.run.app/api/workflows/evaluateShoupai \
+      -H "Content-Type: application/json" \
+      -d '{ ... }'
+    ```
+
+#### 2.8 環境変数の管理（Secret Manager推奨）
+
+- [ ] **Secret Managerへの移行（オプション、推奨）**
+  - [x] `GOOGLE_API_KEY` をSecret Managerに保存
+    ```bash
+    echo -n "your-api-key" | gcloud secrets create google-api-key --data-file=-
+    ```
+  - [x] サービスアカウントにSecret Managerアクセス権限を付与
+    ```bash
+    gcloud secrets add-iam-policy-binding google-api-key \
+      --member="serviceAccount:majiang-ai-sa@majiang-ai-beta.iam.gserviceaccount.com" \
+      --role="roles/secretmanager.secretAccessor"
+    ```
+  - [x] Cloud RunでSecretを環境変数として参照
+    ```bash
+    gcloud run services update majiang-ai-api \
+      --region asia-northeast1 \
+      --update-secrets GOOGLE_API_KEY=google-api-key:latest
+    ```
+
+#### 2.9 ドキュメント更新
+
+- [x] **`ARCHITECTURE.md` の更新**
+  - [x] デプロイ済みURLを記載
+  - [x] 環境変数の設定方法を記載
+
+- [x] **`docs/gcp/README.md` の更新（必要に応じて）**
+  - [x] Cloud Runサービスの情報を追加
+
+---
+
+**完了条件**:
+
+- ✅ Dockerfileが作成され、ローカルでビルド・実行できる
+- ✅ VercelDeployerが削除され、コードがクリーンになっている
+- ✅ Cloud Runにデプロイされ、APIエンドポイントが正常に動作している
+- ✅ ログにエラーがなく、認証が正しく機能している
 
 ### Phase 3: Next.js Frontendの作成
 
