@@ -6,6 +6,8 @@ Google Cloud Platform（GCP）に統一した構成で、Mastra API + Next.jsフ
 画像認識にはCloud Vision API + Gemini APIを使用し、画像はCloud Storageに保存する。
 
 > 詳細な比較検討は [docs/ui-deployment-comparison.md](./docs/ui-deployment-comparison.md) を参照
+>
+> GCP環境設定の詳細は [docs/gcp/README.md](./docs/gcp/README.md) を参照
 
 ## アーキテクチャ
 
@@ -40,14 +42,14 @@ flowchart TB
 
 ## コンポーネント
 
-| コンポーネント         | 役割                                                   |
-| ---------------------- | ------------------------------------------------------ |
-| **Next.js Frontend**   | 手牌入力、画像アップロード、結果表示（majiang-ui）     |
-| **Mastra API**         | Agent実行、ツール呼び出し                              |
-| **Cloud Storage**      | 手牌画像の保存                                         |
-| **Cloud Vision API**   | 画像OCR（牌認識）                                      |
-| **Gemini API**         | 会話生成、分析結果の整形                               |
-| **majiang-ai/core**    | 麻雀AI評価ロジック                                     |
+| コンポーネント       | 役割                                               |
+| -------------------- | -------------------------------------------------- |
+| **Next.js Frontend** | 手牌入力、画像アップロード、結果表示（majiang-ui） |
+| **Mastra API**       | Agent実行、ツール呼び出し                          |
+| **Cloud Storage**    | 手牌画像の保存                                     |
+| **Cloud Vision API** | 画像OCR（牌認識）                                  |
+| **Gemini API**       | 会話生成、分析結果の整形                           |
+| **majiang-ai/core**  | 麻雀AI評価ロジック                                 |
 
 ---
 
@@ -247,19 +249,19 @@ sequenceDiagram
 
 ### Mastra API
 
-| 変数名                         | 説明                   | 例                           |
-| ------------------------------ | ---------------------- | ---------------------------- |
-| `GOOGLE_API_KEY`               | Gemini API キー        | `AIza...`                    |
-| `GOOGLE_CLOUD_PROJECT`         | GCPプロジェクトID      | `majiang-ai-project`         |
-| `GCS_BUCKET`                   | Cloud Storage バケット | `majiang-ai-images`          |
+| 変数名                 | 説明                   | 例                   |
+| ---------------------- | ---------------------- | -------------------- |
+| `GOOGLE_API_KEY`       | Gemini API キー        | `AIza...`            |
+| `GOOGLE_CLOUD_PROJECT` | GCPプロジェクトID      | `majiang-ai-project` |
+| `GCS_BUCKET`           | Cloud Storage バケット | `majiang-ai-images`  |
 
 ### Next.js Frontend
 
-| 変数名                         | 説明                   | 例                                         |
-| ------------------------------ | ---------------------- | ------------------------------------------ |
-| `NEXT_PUBLIC_MASTRA_API_URL`   | Mastra APIのURL        | `https://majiang-ai-api-xxxxx.a.run.app`   |
-| `GCS_BUCKET`                   | Cloud Storage バケット | `majiang-ai-images`                        |
-| `GOOGLE_CLOUD_PROJECT`         | GCPプロジェクトID      | `majiang-ai-project`                       |
+| 変数名                       | 説明                   | 例                                       |
+| ---------------------------- | ---------------------- | ---------------------------------------- |
+| `NEXT_PUBLIC_MASTRA_API_URL` | Mastra APIのURL        | `https://majiang-ai-api-xxxxx.a.run.app` |
+| `GCS_BUCKET`                 | Cloud Storage バケット | `majiang-ai-images`                      |
+| `GOOGLE_CLOUD_PROJECT`       | GCPプロジェクトID      | `majiang-ai-project`                     |
 
 ---
 
@@ -335,7 +337,8 @@ steps:
 
   # Frontend をビルド・デプロイ
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/majiang-ai-frontend", "./frontend"]
+    args:
+      ["build", "-t", "gcr.io/$PROJECT_ID/majiang-ai-frontend", "./frontend"]
 
   - name: "gcr.io/cloud-builders/docker"
     args: ["push", "gcr.io/$PROJECT_ID/majiang-ai-frontend"]
@@ -374,9 +377,10 @@ images:
 
 ### Phase 1: 環境構築
 
-- [ ] GCPプロジェクトの作成
-- [ ] Cloud Storage バケットの作成
-- [ ] 必要なAPIの有効化（Cloud Run, Vision API, Gemini API）
+- [x] GCPプロジェクトの作成
+  - [x] majiang-ai-beta
+- [x] Cloud Storage バケットの作成
+- [x] 必要なAPIの有効化（Cloud Run, Vision API, Gemini API）
 
 ### Phase 2: Mastra APIのCloud Run移行
 
