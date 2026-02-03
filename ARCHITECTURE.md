@@ -647,6 +647,8 @@ images:
 
 ### Phase 3: Next.js Frontendの作成
 
+> 詳細な実装計画・タスク一覧・質問・懸念点は [docs/frontend-implementation-plan.md](./docs/frontend-implementation-plan.md) を参照
+
 - [ ] プロジェクト作成
 - [ ] 手牌入力UI
 - [ ] 画像アップロードUI（GCS連携）

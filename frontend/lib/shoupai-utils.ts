@@ -1,6 +1,14 @@
 /**
  * 手牌の牌セットと文字列変換
- * - 牌ID: m1〜m9（萬子）, p1〜p9（筒子）, s1〜s9（索子）, z1〜z7（字牌: 東南西北白發中）
+ *
+ * 牌ID（majiang-core / majiang-ai と同一）:
+ * - 萬子: m1〜m9, 赤五萬: m0
+ * - 筒子: p1〜p9, 赤五筒: p0
+ * - 索子: s1〜s9, 赤五索: s0
+ * - 字牌: z1〜z7（東南西北白發中）。字牌に赤はなし。
+ *
+ * 画像ファイル名: 牌IDをそのまま使う（例: m1.gif, m0.gif, p5.gif, z1.gif）。
+ * civillink の赤牌はダウンロード後に m0.gif, p0.gif, s0.gif として保存する。
  */
 
 export const MANZU_LABELS = ["一", "二", "三", "四", "五", "六", "七", "八", "九"] as const;
@@ -15,32 +23,65 @@ export interface TileDef {
   num: number;
 }
 
-const MANZU: TileDef[] = MANZU_LABELS.map((label, i) => ({
-  id: `m${i + 1}`,
-  label: `${label}萬`,
-  suit: "m",
-  num: i + 1,
-}));
-const PINZU: TileDef[] = PINZU_LABELS.map((label, i) => ({
-  id: `p${i + 1}`,
-  label: `${label}筒`,
-  suit: "p",
-  num: i + 1,
-}));
-const SOZU: TileDef[] = SOZU_LABELS.map((label, i) => ({
-  id: `s${i + 1}`,
-  label: `${label}索`,
-  suit: "s",
-  num: i + 1,
-}));
+/** 萬子 m1〜m4, 赤五萬 m0, 萬子 m5〜m9（表示順） */
+const MANZU: TileDef[] = [
+  ...MANZU_LABELS.slice(0, 4).map((label, i) => ({
+    id: `m${i + 1}`,
+    label: `${label}萬`,
+    suit: "m" as const,
+    num: i + 1,
+  })),
+  { id: "m0", label: "五萬", suit: "m", num: 0 },
+  ...MANZU_LABELS.slice(4, 9).map((label, i) => ({
+    id: `m${i + 5}`,
+    label: `${label}萬`,
+    suit: "m" as const,
+    num: i + 5,
+  })),
+];
+
+/** 筒子 p1〜p4, 赤五筒 p0, 筒子 p5〜p9 */
+const PINZU: TileDef[] = [
+  ...PINZU_LABELS.slice(0, 4).map((label, i) => ({
+    id: `p${i + 1}`,
+    label: `${label}筒`,
+    suit: "p" as const,
+    num: i + 1,
+  })),
+  { id: "p0", label: "⑤筒", suit: "p", num: 0 },
+  ...PINZU_LABELS.slice(4, 9).map((label, i) => ({
+    id: `p${i + 5}`,
+    label: `${label}筒`,
+    suit: "p" as const,
+    num: i + 5,
+  })),
+];
+
+/** 索子 s1〜s4, 赤五索 s0, 索子 s5〜s9 */
+const SOZU: TileDef[] = [
+  ...SOZU_LABELS.slice(0, 4).map((label, i) => ({
+    id: `s${i + 1}`,
+    label: `${label}索`,
+    suit: "s" as const,
+    num: i + 1,
+  })),
+  { id: "s0", label: "５索", suit: "s", num: 0 },
+  ...SOZU_LABELS.slice(4, 9).map((label, i) => ({
+    id: `s${i + 5}`,
+    label: `${label}索`,
+    suit: "s" as const,
+    num: i + 5,
+  })),
+];
+
 const JIPAI: TileDef[] = JIPAI_LABELS.map((label, i) => ({
   id: `z${i + 1}`,
   label,
-  suit: "z",
+  suit: "z" as const,
   num: i + 1,
 }));
 
-/** 全34種の牌（萬子・筒子・索子・字牌） */
+/** 全37種（34種＋赤牌 m0/p0/s0）。画像名は id のまま（例: m0.gif） */
 export const TILE_SET: TileDef[] = [...MANZU, ...PINZU, ...SOZU, ...JIPAI];
 
 /** suit ごとの牌セット（萬子・筒子・索子・字牌の順で列表示用） */
@@ -73,4 +114,23 @@ export function selectedTilesToShoupaiString(tileIds: string[]): string {
     if (nums.length) out += suit + nums.join("");
   }
   return out;
+}
+
+/**
+ * 手牌文字列（m123p456...、0は赤牌 m0/p0/s0）を牌IDの配列に変換する。
+ * 同種複数枚は m111 → ["m1","m1","m1"]、m05 → ["m0","m5"] のように1桁ずつ展開する。
+ */
+export function shoupaiStringToTileIds(paistr: string): string[] {
+  const ids: string[] = [];
+  const regex = /([mpsz])(\d+)/g;
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(paistr)) !== null) {
+    const suit = m[1] as "m" | "p" | "s" | "z";
+    const digits = m[2];
+    for (const d of digits) {
+      if (suit === "z" && (d === "0" || Number(d) > 7)) continue;
+      ids.push(suit + d);
+    }
+  }
+  return ids;
 }
