@@ -43,6 +43,14 @@ const JIPAI: TileDef[] = JIPAI_LABELS.map((label, i) => ({
 /** 全34種の牌（萬子・筒子・索子・字牌） */
 export const TILE_SET: TileDef[] = [...MANZU, ...PINZU, ...SOZU, ...JIPAI];
 
+/** suit ごとの牌セット（萬子・筒子・索子・字牌の順で列表示用） */
+export const TILE_SET_BY_SUIT: { suitLabel: string; tiles: TileDef[] }[] = [
+  { suitLabel: "萬子", tiles: MANZU },
+  { suitLabel: "筒子", tiles: PINZU },
+  { suitLabel: "索子", tiles: SOZU },
+  { suitLabel: "字牌", tiles: JIPAI },
+];
+
 const TILE_MAP = new Map(TILE_SET.map((t) => [t.id, t]));
 
 /** 牌IDから表示ラベルを取得 */

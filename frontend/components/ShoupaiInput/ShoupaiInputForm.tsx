@@ -1,6 +1,7 @@
 "use client";
 
-import { getTileLabel, TILE_SET } from "@/lib/shoupai-utils";
+import { getTileLabel, TILE_SET_BY_SUIT } from "@/lib/shoupai-utils";
+import { TileButton } from "./TileButton";
 
 /**
  * Presentation: 手牌入力フォームの見た目だけを担当する。
@@ -65,28 +66,25 @@ export function ShoupaiInputForm({
       {/* 選択した手牌の表示 */}
       <div>
         <label className="mb-1 block text-sm font-medium text-zinc-700">
-          選択した手牌（{selectedTiles.length}枚 / 最大{MAX_HAND}枚）
+          選択した手牌（{selectedTiles.length} /{MAX_HAND}）
         </label>
         <div
-          className="min-h-[3rem] rounded-md border border-zinc-300 bg-zinc-50/50 px-3 py-2"
+          className="min-h-[2.5rem] sm:min-h-[3rem] rounded-md border border-zinc-300 bg-zinc-50/50 px-2 py-1.5 sm:px-3 sm:py-2"
           aria-live="polite"
         >
           {selectedTiles.length === 0 ? (
             <p className="text-sm text-zinc-500">牌を下から選んでください</p>
           ) : (
-            <ul className="flex flex-wrap gap-1.5">
+            <ul className="flex flex-wrap gap-0.5 sm:gap-1.5">
               {selectedTiles.map((tileId, index) => (
                 <li key={`${tileId}-${index}`}>
-                  <button
-                    type="button"
+                  <TileButton
+                    label={getTileLabel(tileId)}
                     onClick={() => onRemoveAt(index)}
                     disabled={disabled}
-                    className="rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-800 shadow-sm hover:bg-zinc-100 disabled:opacity-50"
                     title={`${getTileLabel(tileId)} を削除`}
-                    aria-label={`${getTileLabel(tileId)} を削除`}
-                  >
-                    {getTileLabel(tileId)} ×
-                  </button>
+                    ariaLabel={`${getTileLabel(tileId)} を削除`}
+                  />
                 </li>
               ))}
             </ul>
@@ -94,71 +92,86 @@ export function ShoupaiInputForm({
         </div>
       </div>
 
-      {/* 牌セレクター（各牌を押して追加） */}
+      {/* 牌セレクター（suit ごとに列で表示） */}
       <div>
         <label className="mb-1 block text-sm font-medium text-zinc-700">
           牌を選ぶ（クリックで追加）
         </label>
-        <div className="grid grid-cols-9 gap-1 sm:grid-cols-10">
-          {TILE_SET.map((tile) => {
-            const addable = canAddTile(selectedTiles, tile.id);
-            return (
-              <button
-                key={tile.id}
-                type="button"
-                onClick={() => addable && onAddTile(tile.id)}
-                disabled={disabled || !addable}
-                className="rounded border border-zinc-300 bg-white px-1.5 py-1 text-xs font-medium text-zinc-800 shadow-sm hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
-                title={tile.label}
-                aria-label={tile.label}
-              >
-                {tile.label}
-              </button>
-            );
-          })}
+        <div className="space-y-1.5 sm:space-y-2">
+          {TILE_SET_BY_SUIT.map(({ suitLabel, tiles }) => (
+            <div key={suitLabel} className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+              <span className="w-6 shrink-0 text-[10px] font-medium text-zinc-500 sm:w-8 sm:text-xs">
+                {suitLabel}
+              </span>
+              <div className="flex flex-wrap gap-0.5 sm:gap-1">
+                {tiles.map((tile) => {
+                  const addable = canAddTile(selectedTiles, tile.id);
+                  return (
+                    <TileButton
+                      key={tile.id}
+                      label={tile.label}
+                      onClick={() => addable && onAddTile(tile.id)}
+                      disabled={disabled || !addable}
+                      title={tile.label}
+                      ariaLabel={tile.label}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-
-      <details className="rounded-md border border-zinc-200 bg-zinc-50/50 px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium text-zinc-700">
-          場風・自風・ドラ・巡目（任意）
-        </summary>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div>
-            <label htmlFor="zhuangfeng" className="block text-xs font-medium text-zinc-600">
+          <div role="group" aria-labelledby="zhuangfeng-label">
+            <span id="zhuangfeng-label" className="block text-xs font-medium text-zinc-600">
               場風
-            </label>
-            <select
-              id="zhuangfeng"
-              value={zhuangfeng}
-              onChange={(e) => onZhuangfengChange(Number(e.target.value))}
-              className="mt-0.5 w-full rounded border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-900"
-              disabled={disabled}
-            >
+            </span>
+            <div className="mt-0.5 flex gap-0.5 rounded border border-zinc-300 bg-zinc-50/50 p-0.5">
               {ZHUANGFENG_LABELS.map((label, i) => (
-                <option key={label} value={i}>
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => onZhuangfengChange(i)}
+                  disabled={disabled}
+                  className={
+                    "min-w-9 flex-1 rounded px-2 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-0 " +
+                    (zhuangfeng === i
+                      ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700 disabled:bg-blue-500"
+                      : "bg-white text-zinc-800 hover:bg-zinc-100 disabled:bg-zinc-100")
+                  }
+                  aria-pressed={zhuangfeng === i}
+                  aria-label={`場風: ${label}`}
+                >
                   {label}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
-          <div>
-            <label htmlFor="menfeng" className="block text-xs font-medium text-zinc-600">
+          <div role="group" aria-labelledby="menfeng-label">
+            <span id="menfeng-label" className="block text-xs font-medium text-zinc-600">
               自風
-            </label>
-            <select
-              id="menfeng"
-              value={menfeng}
-              onChange={(e) => onMenfengChange(Number(e.target.value))}
-              className="mt-0.5 w-full rounded border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-900"
-              disabled={disabled}
-            >
+            </span>
+            <div className="mt-0.5 flex gap-0.5 rounded border border-zinc-300 bg-zinc-50/50 p-0.5">
               {MENFENG_LABELS.map((label, i) => (
-                <option key={label} value={i}>
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => onMenfengChange(i)}
+                  disabled={disabled}
+                  className={
+                    "min-w-9 flex-1 rounded px-2 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-0 " +
+                    (menfeng === i
+                      ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700 disabled:bg-blue-500"
+                      : "bg-white text-zinc-800 hover:bg-zinc-100 disabled:bg-zinc-100")
+                  }
+                  aria-pressed={menfeng === i}
+                  aria-label={`自風: ${label}`}
+                >
                   {label}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
           <div>
             <label htmlFor="baopai" className="block text-xs font-medium text-zinc-600">
@@ -170,7 +183,7 @@ export function ShoupaiInputForm({
               value={baopai}
               onChange={(e) => onBaopaiChange(e.target.value)}
               placeholder="s3"
-              className="mt-0.5 w-full rounded border border-zinc-300 px-2 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400"
+              className="mt-0.5 w-full rounded border border-zinc-300 px-2 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 bg-white"
               disabled={disabled}
             />
           </div>
@@ -185,12 +198,11 @@ export function ShoupaiInputForm({
               max={18}
               value={xun}
               onChange={(e) => onXunChange(Number(e.target.value) || 0)}
-              className="mt-0.5 w-full rounded border border-zinc-300 px-2 py-1.5 text-sm text-zinc-900"
+              className="mt-0.5 w-full rounded border border-zinc-300 px-2 py-1.5 text-sm bg-white"
               disabled={disabled}
             />
           </div>
         </div>
-      </details>
 
       <button
         type="submit"
