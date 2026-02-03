@@ -46,16 +46,38 @@ export interface StreamOptions {
   onTextDelta?: (delta: string) => void;
 }
 
+/** payload からテキストらしい文字列を1つ取り出す（複数キー・形式に対応） */
+function getTextFromPayload(
+  payload: Record<string, unknown> | string | undefined
+): string {
+  if (payload == null) return "";
+  if (typeof payload === "string") return payload;
+  if (typeof payload !== "object") return "";
+  const p = payload as Record<string, unknown>;
+  const candidate =
+    (p.textDelta as string) ??
+    (p.delta as string) ??
+    (p.content as string) ??
+    (p.text as string);
+  return typeof candidate === "string" ? candidate : "";
+}
+
 /** Mastra の text-delta / agent-execution-event-text-delta から表示用テキストを1つ取り出す */
 function getTextDeltaFromEvent(json: StreamEvent | null): string {
-  if (!json?.payload) return "";
+  if (!json) return "";
+  const asRecord = json as Record<string, unknown>;
   if (json.type === "text-delta") {
-    const p = json.payload as { textDelta?: string; delta?: string };
-    return (p.textDelta ?? p.delta ?? "") as string;
+    const fromPayload = getTextFromPayload(json.payload as Record<string, unknown> | undefined);
+    if (fromPayload) return fromPayload;
+    // payload がなくトップレベルに textDelta 等がある形式
+    return getTextFromPayload(asRecord);
   }
-  if (json.type === "agent-execution-event-text-delta" && json.payload?.type === "text-delta") {
-    const inner = json.payload.payload as { textDelta?: string; delta?: string } | undefined;
-    return (inner?.textDelta ?? inner?.delta ?? "") as string;
+  if (json.type === "agent-execution-event-text-delta") {
+    const innerPayload =
+      json.payload?.type === "text-delta"
+        ? (json.payload.payload as Record<string, unknown> | undefined)
+        : (json.payload as Record<string, unknown> | undefined);
+    return getTextFromPayload(innerPayload);
   }
   return "";
 }
