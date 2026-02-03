@@ -183,16 +183,17 @@ flowchart LR
 
 ### 短期（MVP・プロトタイプ）
 
-**選択肢 A: API側でCORS設定** を推奨
+**選択肢 C: Next.js API Routes でプロキシ** を推奨（2025年方針変更）
 
 理由:
-- 実装が最もシンプル
-- 追加コストなし
-- 後から他の選択肢に移行可能
+- API URL をクライアントに晒さない（`NEXT_PUBLIC_` 不要）
+- Mastra 用のトークン・API Key をサーバー側だけで扱える（Secret Manager 等で実行時設定可能）
+- 追加インフラ不要、CORS 不要（同一オリジン）
+- ストリーミングはプロキシ側で中継する実装が必要（選択肢 C の注意点のとおり）
 
 ### 中長期（本番運用）
 
-**選択肢 B: Cloud Load Balancer + カスタムドメイン** を推奨
+**選択肢 B: Cloud Load Balancer + カスタムドメイン** を検討
 
 理由:
 - 同一オリジンで最もセキュア
@@ -205,87 +206,47 @@ flowchart LR
 
 | 項目 | 決定 | 理由 |
 |------|------|------|
-| CORS戦略 | **選択肢 A: API側でCORS設定** | 下記参照 |
+| CORS戦略 | **選択肢 C: Next.js API Routes でプロキシ** | 下記参照 |
 
-### 決定理由
+### 決定理由（2026/2/3方針変更）
 
-1. **URLは再デプロイでも変わらない**
-   - Cloud Run のURLはサービス削除しない限り固定
-   - 開発中にURLが変わる心配なし
+当初は **選択肢 A: API側でCORS設定** を採用していたが、セキュリティ・運用の観点で **選択肢 C（プロキシ）** に変更した。
 
-2. **API Keyで認証すれば公開エンドポイントでも問題ない**
-   - Mastra API に認証を追加することでセキュリティ確保
+1. **API URL をクライアントに露出させない**
+   - ブラウザから Mastra を直接叩くと `NEXT_PUBLIC_MASTRA_API_URL` がクライアントバンドルに埋め込まれ、誰でも URL を取得できる
+   - プロキシにするとブラウザは同一オリジンの Next.js のみ叩くため、Mastra の URL はサーバー専用の `MASTRA_API_URL` でよい
 
-3. **$300クレジットを有効活用できる**
-   - Load Balancer の追加コスト（$18+/月）を節約
-   - クレジットを Cloud Run / Vision API / Gemini API に集中
+2. **トークン・API Key を秘密にできる**
+   - ブラウザから直接叩く場合、Mastra 用の認証トークンをブラウザに載せると漏れるため「秘密」にできない
+   - Next.js 経由にすると、Mastra 用の API Key や IAM トークンはサーバー側だけで持ち、Secret Manager で実行時に渡せる
 
-4. **後からいつでも移行可能**
-   - ユーザーが増えてカスタムドメインが必要になったら Phase 2/3 に移行
+3. **追加インフラ不要**
+   - Load Balancer（選択肢 B）はコストがかかるため、まずはプロキシで CORS 不要・API 隠蔽を実現する
+
+4. **トレードオフ**
+   - ストリーミング（`/stream`）をプロキシする場合は Next.js API Route で ReadableStream を中継する実装が必要
+   - レイテンシは 2 ホップ分増加する
 
 ### 段階的アプローチ
 
 ```mermaid
 flowchart LR
-    A["Phase 1<br/>選択肢A<br/>CORS設定<br/>（現在）"] -->|"ユーザー増加"| B["Phase 2<br/>カスタムドメイン<br/>(LBなし)"]
-    B -->|"本番運用"| C["Phase 3<br/>選択肢B<br/>LB + 同一オリジン"]
+    C["Phase 1<br/>選択肢C<br/>Next.js プロキシ<br/>（現在）"] -->|"ユーザー増加"| B["Phase 2<br/>カスタムドメイン<br/>(LBなし)"]
+    B -->|"本番運用"| LB["Phase 3<br/>選択肢B<br/>LB + 同一オリジン"]
 ```
 
-| Phase | 構成 | URL例 | 追加コスト |
-|-------|------|-------|------------|
-| **1（現在）** | CORS設定のみ | `xxx-abc123.a.run.app` | $0 |
-| 2 | カスタムドメイン（LBなし） | `app.majiang-ai.com` / `api.majiang-ai.com` | ドメイン代のみ |
-| 3 | LB + 同一オリジン | `majiang-ai.com` | $18+/月 |
+| Phase | 構成 | 備考 |
+|-------|------|------|
+| **1（現在）** | Next.js API Route で Mastra をプロキシ。ブラウザは同一オリジンのみ。 | CORS 不要、API URL 隠蔽、Secret Manager で URL 管理可 |
+| 2 | カスタムドメイン（LBなし） | ドメイン代のみ |
+| 3 | LB + 同一オリジン | $18+/月 |
 
 ---
 
-## 実装メモ（選択肢 A を採用する場合）
+## 次のステップ（選択肢 C 採用時）
 
-### 1. Mastra API に CORS ミドルウェアを追加
-
-```typescript
-// mastra/src/server.ts または index.ts
-import cors from "cors";
-
-const allowedOrigins = [
-  process.env.FRONTEND_URL || "https://majiang-ai-xxx.a.run.app",
-  "http://localhost:3000", // 開発用
-];
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // 同一オリジンからのリクエスト（originがundefined）は許可
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-  })
-);
-```
-
-### 2. 環境変数の追加
-
-**Mastra API:**
-
-| 変数名 | 説明 | 例 |
-|--------|------|-----|
-| `FRONTEND_URL` | Frontend の URL | `https://majiang-ai-xxx.a.run.app` |
-
-### 3. デプロイ順序
-
-1. Mastra API をデプロイ → API URL を取得
-2. Frontend をデプロイ → `NEXT_PUBLIC_MASTRA_API_URL` に API URL を設定
-3. Mastra API の `FRONTEND_URL` を Frontend URL に更新
-
----
-
-## 次のステップ
-
-- [x] CORS戦略を決定 → **選択肢A（API側でCORS設定）**
-- [ ] Mastra API に CORS ミドルウェアを追加
-- [ ] 環境変数 `FRONTEND_URL` を設定
-- [ ] 動作確認
+- [x] CORS戦略を決定 → **選択肢C（Next.js API Routes でプロキシ）**
+- [x] Next.js に Mastra 用プロキシ API Route を追加（`/api/agents/[...path]/route.ts`。generate と stream を body パイプで中継）
+- [x] フロントの `getBaseUrl()` を `""` にし、同一オリジン（`/api/agents/...`）呼び出しに変更
+- [x] 環境変数 `MASTRA_API_URL`（サーバー専用）を Next.js に設定（.env.local / Secret Manager）
+- [ ] ローカルで Next + Mastra を起動し、ストリーミング（ReadableStream 中継）の動作確認
