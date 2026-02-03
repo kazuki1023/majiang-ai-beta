@@ -1,4 +1,3 @@
-
 import { Mastra } from '@mastra/core/mastra';
 // import { LibSQLStore } from '@mastra/libsql';
 import { PinoLogger } from '@mastra/loggers';
@@ -8,10 +7,37 @@ import { completenessScorer, toolCallAppropriatenessScorer, translationScorer } 
 import { evaluateShoupaiWorkflow } from './workflows/evaluate-shoupai';
 import { weatherWorkflow } from './workflows/weather-workflow';
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL ?? 'https://majiang-ai-xxxxx.a.run.app',
+  'http://localhost:3000',
+];
+
 export const mastra = new Mastra({
   workflows: { weatherWorkflow, evaluateShoupaiWorkflow },
   agents: { weatherAgent, majiangAnalysisAgent },
   scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
+  server: {
+    middleware: [
+      {
+        path: '/api/*',
+        handler: async (c, next) => {
+          const origin = c.req.header('Origin');
+          if (origin && allowedOrigins.includes(origin)) {
+            c.header('Access-Control-Allow-Origin', origin);
+          } else if (!origin) {
+            c.header('Access-Control-Allow-Origin', '*');
+          }
+          c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+          c.header('Access-Control-Allow-Credentials', 'true');
+          if (c.req.method === 'OPTIONS') {
+            return new Response(null, { status: 204 });
+          }
+          await next();
+        },
+      },
+    ],
+  },
   // vercel storage is not supported yet
   // storage: new LibSQLStore({
   //   // stores observability, scores, ... into memory storage, if it needs to persist, change to file:../mastra.db
