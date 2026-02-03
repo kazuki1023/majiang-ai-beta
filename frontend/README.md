@@ -8,7 +8,7 @@ This is a [Next.js](https://nextjs.org) project for the majiang-ai frontend (Pha
 cp .env.local.example .env.local
 ```
 
-`.env.local` で `NEXT_PUBLIC_MASTRA_API_URL` を Mastra API の URL に設定する（ローカルなら `http://localhost:4111`、Cloud Run ならデプロイ済み URL）。
+`.env.local` で **サーバー専用**の `MASTRA_API_URL` を Mastra API の URL に設定する（ローカルなら `http://localhost:4111`、本番は Cloud Run / Secret Manager で渡す）。ブラウザは同一オリジンの `/api/agents/...` のみ叩き、Next.js の API Route がここにプロキシする。
 
 ### 開発サーバー
 

@@ -228,7 +228,14 @@ gcloud secrets add-iam-policy-binding majiang-ai-google-cloud-project \
   --project=$PROJECT_ID
 ```
 
-- カスタムサービスアカウントで Cloud Run を動かしている場合は、そのサービスアカウントのメールを `SA_EMAIL` に指定する。
+- カスタムサービスアカウントで Cloud Run を動かしている場合は、そのサービスアカウントのメールを `SA_EMAIL` に指定する。  
+  **例（majiang-ai-api が `majiang-ai-sa` を使う場合）**: 同じシークレットを参照するなら、その SA にも `roles/secretmanager.secretAccessor` を付与する。
+  ```bash
+  gcloud secrets add-iam-policy-binding majiang-ai-mastra-api-url \
+    --member="serviceAccount:majiang-ai-sa@majiang-ai-beta.iam.gserviceaccount.com" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project=majiang-ai-beta
+  ```
 
 #### 4. デプロイ時に `--set-secrets` で渡す
 
@@ -328,10 +335,10 @@ gsutil iam get gs://${BUCKET_NAME}
 ### コマンド
 
 ```bash
-# サービスの詳細（URL が表示される）
+# サービスの詳細（トラフィック用の正しい URL。list の表示と異なる場合がある）
 gcloud run services describe majiang-ai-frontend --region asia-northeast1 --format='value(status.url)'
 
-# または一覧で確認
+# 一覧（参考。URL は describe の status.url を優先すること）
 gcloud run services list --region asia-northeast1
 ```
 
