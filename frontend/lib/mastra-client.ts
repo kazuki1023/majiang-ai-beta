@@ -27,12 +27,14 @@ export interface GenerateMessage {
   content: string;
 }
 
-// --- stream イベントの型 ---
+// --- stream イベントの型（Mastra の type + payload / agent-execution-event-text-delta のネスト対応）---
 export interface StreamEvent {
   type: string;
   payload?: {
     textDelta?: string;
     delta?: string;
+    type?: string;
+    payload?: { textDelta?: string; delta?: string; [key: string]: unknown };
     [key: string]: unknown;
   };
   from?: string;
@@ -42,6 +44,20 @@ export interface StreamEvent {
 export interface StreamOptions {
   signal?: AbortSignal;
   onTextDelta?: (delta: string) => void;
+}
+
+/** Mastra の text-delta / agent-execution-event-text-delta から表示用テキストを1つ取り出す */
+function getTextDeltaFromEvent(json: StreamEvent | null): string {
+  if (!json?.payload) return "";
+  if (json.type === "text-delta") {
+    const p = json.payload as { textDelta?: string; delta?: string };
+    return (p.textDelta ?? p.delta ?? "") as string;
+  }
+  if (json.type === "agent-execution-event-text-delta" && json.payload?.type === "text-delta") {
+    const inner = json.payload.payload as { textDelta?: string; delta?: string } | undefined;
+    return (inner?.textDelta ?? inner?.delta ?? "") as string;
+  }
+  return "";
 }
 
 /**
@@ -142,13 +158,8 @@ export async function streamMajiangAnalysis(
           }
         }
 
-        if (json?.type === "text-delta" && json.payload && options?.onTextDelta) {
-          const delta =
-            (json.payload.textDelta as string) ??
-            (json.payload.delta as string) ??
-            "";
-          if (delta) options.onTextDelta(delta);
-        }
+        const delta = getTextDeltaFromEvent(json);
+        if (delta && options?.onTextDelta) options.onTextDelta(delta);
       }
     }
 
@@ -170,13 +181,8 @@ export async function streamMajiangAnalysis(
           // ignore
         }
       }
-      if (json?.type === "text-delta" && json.payload && options?.onTextDelta) {
-        const delta =
-          (json.payload.textDelta as string) ??
-          (json.payload.delta as string) ??
-          "";
-        if (delta) options.onTextDelta(delta);
-      }
+      const delta = getTextDeltaFromEvent(json);
+      if (delta && options?.onTextDelta) options.onTextDelta(delta);
     }
   } finally {
     reader.releaseLock();
