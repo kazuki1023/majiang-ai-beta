@@ -10,6 +10,7 @@ Mastra API の Cloud Run 移行完了を前提に、Next.js フロントエン�
 ## 前提・スコープ
 
 - **完了済み**: Mastra API Cloud Run デプロイ、GCS バケット、必要な API 有効化
+- **設計（2025年方針変更）**: ブラウザは Mastra API を**直接叩かず**、**Next.js の API Route 経由（プロキシ）**で叩く（[cors-strategy.md](./cors-strategy.md) 選択肢 C）。CORS 不要、Mastra の URL はサーバー専用の `MASTRA_API_URL` で Secret Manager 管理可。
 - **Phase 3 の範囲**: 手牌テキスト入力 → 分析 API 連携、画像アップロード UI（GCS 保存まで）、分析結果表示、**majiang-ui による牌描画（手牌・分析結果）**
 - **Phase 4 に回す**: imageRecognitionAgent（画像→手牌認識）は未実装のため、画像アップロードは「保存＋プレースホルダー表示」まで
 
@@ -19,20 +20,16 @@ Mastra API の Cloud Run 移行完了を前提に、Next.js フロントエン�
 
 ### フェーズ 0: 事前対応（フロント実装より先に実施推奨）
 
-- [ ] **0.1 Mastra API に CORS を追加**
-  - [ ] 0.1.1 `mastra/src/mastra/index.ts` を開き、Mastra の `server.middleware` 設定を確認する
-  - [ ] 0.1.2 CORS 用 middleware を追加する（handler 内で `Access-Control-Allow-Origin` 等を設定）
-  - [ ] 0.1.3 許可オリジンに `FRONTEND_URL`（本番）と `http://localhost:3000`（開発）を含める
-  - [ ] 0.1.4 `Access-Control-Allow-Methods`: `GET, POST, PUT, DELETE, OPTIONS` を設定する
-  - [ ] 0.1.5 `Access-Control-Allow-Headers`: `Content-Type, Authorization` を設定する
-  - [ ] 0.1.6 `OPTIONS` リクエストに対して `204` を返すようにする
-  - [ ] 0.1.7 middleware の適用パスを `/api/*` に設定する
-  - [ ] 0.1.8 ローカルで Mastra を起動し、ブラウザまたは curl でプリフライトが通ることを確認する
-  参照: [frontend-preparation-checklist.md](./frontend-preparation-checklist.md) §1、[cors-strategy.md](./cors-strategy.md)
+- [x] **0.1 Next.js に Mastra 用プロキシ API Route を追加**（[cors-strategy.md](./cors-strategy.md) 選択肢 C）
+  - [x] 0.1.1 `/api/agents/[...path]` 等の API Route を追加し、`MASTRA_API_URL` へ中継する
+  - [x] 0.1.2 `generate` 用（POST → JSON 返却）と `stream` 用（POST → ReadableStream 中継）の両方に対応する
+  - [x] 0.1.3 環境変数 `MASTRA_API_URL`（サーバー専用）を読み、未設定時は 503 でエラーメッセージを返す
+  - [ ] 0.1.4 ローカルで Next と Mastra を起動し、同一オリジン（`/api/...`）経由で Mastra に届くことを確認する
+  参照: [cors-strategy.md](./cors-strategy.md) 選択肢 C、実装例
 
-- [ ] **0.2 Mastra API の環境変数**
-  - [ ] 0.2.1 Cloud Run の「編集と新しいリビジョンをデプロイ」で環境変数一覧を開く
-  - [ ] 0.2.2 変数名 `FRONTEND_URL` を追加する（値はフロントデプロイ後に本番 URL を設定）
+- [ ] **0.2 Mastra API の環境変数**（プロキシ採用のため CORS 用 `FRONTEND_URL` は必須ではない）
+  - [ ] 0.2.1 Cloud Run の「編集と新しいリビジョンをデプロイ」で環境変数一覧を確認する
+  - [ ] 0.2.2 必要に応じて `FRONTEND_URL` を設定する（他オリジンから直接 Mastra を叩く場合のみ。プロキシのみなら不要）
   - [ ] 0.2.3 ローカル開発用に `.env` や `mastra/.env` に `FRONTEND_URL=http://localhost:3000` を設定する（任意）
 
 - [ ] **0.3 Mastra API のレスポンス形式確認**
@@ -79,9 +76,9 @@ Mastra API の Cloud Run 移行完了を前提に、Next.js フロントエン�
 
 ### フェーズ 2: 手牌入力 UI と API 連携
 
-- [x] **2.1 Mastra クライアント**
+- [x] **2.1 Mastra クライアント**（設計変更: 同一オリジン呼び出しに更新）
   - [x] 2.1.1 `lib/mastra-client.ts` を新規作成する
-  - [x] 2.1.2 環境変数 `NEXT_PUBLIC_MASTRA_API_URL` を読み込む（`getBaseUrl()`）
+  - [x] 2.1.2 **同一オリジン**の Next.js API Route を呼ぶように変更する。`getBaseUrl()` を `""` にし、`/api/agents/majiangAnalysisAgent/generate` 等を相対パスで叩く（サーバー側で `MASTRA_API_URL` を使用してプロキシ）
   - [x] 2.1.3 `POST /api/agents/majiangAnalysisAgent/generate` を呼ぶ `generateMajiangAnalysis` を実装する（非ストリーミング用）
   - [x] 2.1.4 `POST /api/agents/majiangAnalysisAgent/stream` を呼ぶ `streamMajiangAnalysis` を実装する。fetch + ReadableStream でチャンクをパースし、`text-delta` を `onTextDelta` コールバックで返す。SSE（`data:`）と NDJSON の両方に対応
   - [x] 2.1.5 リクエスト body を `{ messages: [{ role: 'user', content: string }] }` の形にする
@@ -124,41 +121,41 @@ Mastra API の Cloud Run 移行完了を前提に、Next.js フロントエン�
 
 ### フェーズ 3: 画像アップロード UI（GCS 連携）＋ 牌描画
 
-- [ ] **3.1 GCS クライアント（サーバー側）**
-  - [ ] 3.1.1 `lib/gcs-client.ts` を新規作成する（サーバー専用。クライアントから直接 import しない）
-  - [ ] 3.1.2 `@google-cloud/storage` をインストールする（`npm install @google-cloud/storage`）
-  - [ ] 3.1.3 `Storage` クライアントを初期化する（ADC または `GOOGLE_CLOUD_PROJECT` を利用）
-  - [ ] 3.1.4 `uploadImage(buffer: Buffer, fileName: string)` を実装する
-  - [ ] 3.1.5 保存パスを `uploads/{timestamp}-{fileName}` 形式にする
-  - [ ] 3.1.6 アップロード後に `gs://{bucket}/{path}` を返す
-  - [ ] 3.1.7 環境変数 `GCS_BUCKET` と `GOOGLE_CLOUD_PROJECT` を読み込む
+- [x] **3.1 GCS クライアント（サーバー側）**
+  - [x] 3.1.1 `lib/gcs-client.ts` を新規作成する（サーバー専用。クライアントから直接 import しない）
+  - [x] 3.1.2 `@google-cloud/storage` をインストールする（`npm install @google-cloud/storage`）
+  - [x] 3.1.3 `Storage` クライアントを初期化する（ADC または `GOOGLE_CLOUD_PROJECT` を利用）
+  - [x] 3.1.4 `uploadImage(buffer: Buffer, fileName: string)` を実装する
+  - [x] 3.1.5 保存パスを `uploads/{timestamp}-{fileName}` 形式にする
+  - [x] 3.1.6 アップロード後に `gs://{bucket}/{path}` を返す
+  - [x] 3.1.7 環境変数 `GCS_BUCKET` と `GOOGLE_CLOUD_PROJECT` を読み込む
 
-- [ ] **3.2 アップロード API Route**
-  - [ ] 3.2.1 `app/api/upload/route.ts` を新規作成する
-  - [ ] 3.2.2 `POST` ハンドラを実装する
-  - [ ] 3.2.3 リクエストを multipart/form-data として受け、画像ファイルを取得する
-  - [ ] 3.2.4 `lib/gcs-client` の `uploadImage` を呼び、GCS に保存する
-  - [ ] 3.2.5 成功時に `{ gcsUri: 'gs://...' }` を JSON で返す
-  - [ ] 3.2.6 失敗時は適切な HTTP ステータスとエラーメッセージを返す
+- [x] **3.2 アップロード API Route**
+  - [x] 3.2.1 `app/api/upload/route.ts` を新規作成する
+  - [x] 3.2.2 `POST` ハンドラを実装する
+  - [x] 3.2.3 リクエストを multipart/form-data として受け、画像ファイルを取得する
+  - [x] 3.2.4 `lib/gcs-client` の `uploadImage` を呼び、GCS に保存する
+  - [x] 3.2.5 成功時に `{ gcsUri: 'gs://...' }` を JSON で返す
+  - [x] 3.2.6 失敗時は適切な HTTP ステータスとエラーメッセージを返す
 
-- [ ] **3.3 画像アップロード UI**
-  - [ ] 3.3.1 `components/ImageUpload.tsx` を新規作成する
-  - [ ] 3.3.2 ファイル選択用の input（accept="image/*"）を配置する
-  - [ ] 3.3.3 選択後にプレビューを表示する（3.4 と連携）
-  - [ ] 3.3.4 アップロードボタンを配置し、クリックで `/api/upload` に POST する
-  - [ ] 3.3.5 成功時に返却された `gcsUri` を state に保持する
-  - [ ] 3.3.6 Phase 4 で imageRecognitionAgent ができたら「認識」ボタンで API 呼び出しに繋ぐ想定のため、必要なら「準備中」のプレースホルダーを表示する
+- [x] **3.3 画像アップロード UI**
+  - [x] 3.3.1 `components/ImageUpload.tsx` を新規作成する
+  - [x] 3.3.2 ファイル選択用の input（accept="image/*"）を配置する
+  - [x] 3.3.3 選択後にプレビューを表示する（3.4 と連携）
+  - [x] 3.3.4 アップロードボタンを配置し、クリックで `/api/upload` に POST する
+  - [x] 3.3.5 成功時に返却された `gcsUri` を state に保持する
+  - [x] 3.3.6 Phase 4 で imageRecognitionAgent ができたら「認識」ボタンで API 呼び出しに繋ぐ想定のため、必要なら「準備中」のプレースホルダーを表示する
 
-- [ ] **3.4 画像プレビュー**
-  - [ ] 3.4.1 アップロード前: 選択した File を `URL.createObjectURL` でプレビュー表示する
-  - [ ] 3.4.2 アップロード後: 必要に応じて GCS の Signed URL を取得して表示する（必須でない場合は Object URL のままでも可）
+- [x] **3.4 画像プレビュー**
+  - [x] 3.4.1 アップロード前: 選択した File を `URL.createObjectURL` でプレビュー表示する
+  - [x] 3.4.2 アップロード後: 必要に応じて GCS の Signed URL を取得して表示する（必須でない場合は Object URL のままでも可）
 
-- [ ] **3.5 majiang-ui による牌描画（Phase 3 で実施）**
-  - [ ] 3.5.1 手牌表示用の React ラッパーコンポーネントを作成する（例: `components/ShoupaiDisplay.tsx`）。`useRef` で DOM を確保し、`useEffect` 内で majiang-ui の Shoupai 等を初期化する
-  - [ ] 3.5.2 手牌入力欄の近くに、入力した手牌文字列を majiang-ui で描画したプレビューを表示する（majiang-core でパース → majiang-ui で描画）
-  - [ ] 3.5.3 分析結果表示で「推奨打牌」や「打牌候補」などの牌表記を、可能な範囲で majiang-ui の牌表示に置き換える（テキスト＋牌の混在でも可）
-  - [ ] 3.5.4 牌アセット（`.pai`）が正しく読み込まれるよう、動的 import やクライアント専用レンダリングのタイミングを調整する
-  - [ ] 3.5.5 Docker ビルド時に submodules が含まれることを確認する（フェーズ 4 でビルド検証）
+- [x] **3.5 牌描画（Phase 3 で実施）**
+  - [x] 3.5.1 手牌表示用の React コンポーネント（`components/ShoupaiDisplay/ShoupaiDisplay.tsx`）を作成済み
+  - [x] 3.5.2 手牌入力欄の近くに、入力した手牌文字列を牌画像でプレビュー表示する（TileButton + public/pai/*.gif）
+  - [x] 3.5.3 分析結果表示は Markdown 表示（AnalysisResult）。牌表記はテキストのまま
+  - [x] 3.5.4 牌アセットは `public/pai/{牌ID}.gif`（civillink 等）で読み込み
+  - [x] 3.5.5 Docker ビルド時に submodules が含まれることを確認する（フェーズ 4 でビルド検証）
 
 **補足**: 画像認識は Phase 4 のため、Phase 3 では「画像を GCS に上げて URL を保持する」まで。認識結果の表示は「未実装」表示や、後で繋ぐプレースホルダーでよい。
 
@@ -166,24 +163,24 @@ Mastra API の Cloud Run 移行完了を前提に、Next.js フロントエン�
 
 ### フェーズ 4: Docker とデプロイ
 
-- [ ] **4.1 Dockerfile**
-  - [ ] 4.1.1 `frontend/Dockerfile` を新規作成する
-  - [ ] 4.1.2 マルチステージビルドにする（builder と runner）
-  - [ ] 4.1.3 builder で `npm ci` と `npm run build` を実行する
-  - [ ] 4.1.4 runner で `.next/standalone` の内容をコピーする
-  - [ ] 4.1.5 `.next/static` と `public/` を明示的にコピーする
-  - [ ] 4.1.6 `ENV PORT=8080`、`CMD ["node", "server.js"]` を設定する
-  - [ ] 4.1.7 ビルドコンテキストをリポジトリルートにする想定で、`COPY` のパスを調整する（4.2 と整合）
+- [x] **4.1 Dockerfile**
+  - [x] 4.1.1 `frontend/Dockerfile` を新規作成する
+  - [x] 4.1.2 マルチステージビルドにする（builder と runner）
+  - [x] 4.1.3 builder で `npm ci` と `npm run build` を実行する
+  - [x] 4.1.4 runner で `.next/standalone` の内容をコピーする
+  - [x] 4.1.5 `.next/static` と `public/` を明示的にコピーする
+  - [x] 4.1.6 `ENV PORT=8080`、`CMD ["node", "server.js"]` を設定する
+  - [x] 4.1.7 ビルドコンテキストをリポジトリルートにする想定で、`COPY` のパスを調整する（4.2 と整合）
 
-- [ ] **4.2 submodules 対応**
-  - [ ] 4.2.1 frontend が majiang-ui 等の submodule を参照している場合、Docker ビルドはリポジトリルートから行う
-  - [ ] 4.2.2 `docker build -f frontend/Dockerfile .` のようにコンテキストをルートにし、`COPY submodules/ ./submodules/` などで frontend から参照できるようにする
-  - [ ] 4.2.3 frontend 単体で submodule を使わない場合は、`COPY frontend/ ./` などで frontend だけコピーする構成でも可
+- [x] **4.2 submodules 対応**
+  - [x] 4.2.1 frontend が majiang-ui 等の submodule を参照している場合、Docker ビルドはリポジトリルートから行う
+  - [x] 4.2.2 `docker build -f frontend/Dockerfile .` のようにコンテキストをルートにし、`COPY submodules/ ./submodules/` などで frontend から参照できるようにする
+  - [x] 4.2.3 frontend 単体で submodule を使わない場合は、`COPY frontend/ ./` などで frontend だけコピーする構成で実装済み
 
-- [ ] **4.3 .dockerignore**
-  - [ ] 4.3.1 `frontend/.dockerignore` またはルートの `.dockerignore` に、コンテキストに含めないファイルを記載する
-  - [ ] 4.3.2 少なくとも `node_modules`, `.env`, `.env.local`, `.git` を除外する
-  - [ ] 4.3.3 必要に応じて `.next`, `docs`, `.cursor` 等を除外する
+- [x] **4.3 .dockerignore**
+  - [x] 4.3.1 ルートの `.dockerignore` に、コンテキストに含めないファイルを記載する
+  - [x] 4.3.2 少なくとも `node_modules`, `.env`, `.env.local`, `.git` を除外する
+  - [x] 4.3.3 `frontend/node_modules`, `frontend/.next`, `docs`, `.cursor` 等を除外する
 
 - [ ] **4.4 Cloud Run デプロイ**
   - [ ] 4.4.1 Docker イメージをビルドする（Apple Silicon の場合は `--platform linux/amd64` を付ける）
@@ -191,6 +188,7 @@ Mastra API の Cloud Run 移行完了を前提に、Next.js フロントエン�
   - [ ] 4.4.3 `gcloud run deploy majiang-ai-frontend` でデプロイする
   - [ ] 4.4.4 環境変数 `NEXT_PUBLIC_MASTRA_API_URL`, `GCS_BUCKET`, `GOOGLE_CLOUD_PROJECT` を設定する
   - [ ] 4.4.5 デプロイ後にサービス URL を取得する
+  - **詳細**: [docs/gcp/cloud-run-frontend-deploy.md](gcp/cloud-run-frontend-deploy.md)
 
 - [ ] **4.5 CORS の反映**
   - [ ] 4.5.1 フロントの本番 URL（Cloud Run の URL）をメモする
@@ -246,12 +244,12 @@ frontend/
 
 ## 環境変数まとめ
 
-- **Next.js（ビルド時・クライアント）**: `NEXT_PUBLIC_MASTRA_API_URL` — Mastra API の URL（本番は Cloud Run の URL）
+- **Next.js（サーバーのみ）**: `MASTRA_API_URL` — Mastra API の URL（プロキシ用。Secret Manager で渡す想定）
 - **Next.js（サーバーのみ）**: `GCS_BUCKET` — バケット名（例: `majiang-ai-images`）
 - **Next.js（サーバーのみ）**: `GOOGLE_CLOUD_PROJECT` — GCP プロジェクト ID（GCS 用）
-- **Mastra API**: `FRONTEND_URL` — フロントのオリジン（CORS 用、本番デプロイ後に設定）
+- **Mastra API**: `FRONTEND_URL` — フロントのオリジン（他オリジンから直接 Mastra を叩く場合のみ。プロキシのみなら不要）
 
-GCS 認証は Cloud Run のサービスアカウント＋ADC（ローカルは `gcloud auth application-default login`）を想定。
+設計変更により `NEXT_PUBLIC_MASTRA_API_URL` は不要（ブラウザは同一オリジンの `/api/...` のみ呼ぶ）。GCS 認証は Cloud Run のサービスアカウント＋ADC（ローカルは `gcloud auth application-default login`）を想定。
 
 ---
 
@@ -303,10 +301,9 @@ GCS 認証は Cloud Run のサービスアカウント＋ADC（ローカルは `
 - **方針**: frontend-preparation-checklist の「選択肢 B: Next.js API Route → GCS」を採用。フロントは認証不要で、Next.js の API Route が Cloud Run のサービスアカウント（ADC）で GCS に書き込む。
 - **確認したいこと**: フロント用に別サービスアカウントを切るか、既存の `majiang-ai-sa` に `objectCreator` を付与して Cloud Run のフロントサービスで使うか。推奨は「同一 SA でフロントの Cloud Run に objectCreator を付与」。
 
-### 4. CORS の先行実装
+### 4. CORS（設計変更で不要）
 
-- **懸念**: フロントをローカルで動かすと、ブラウザから Mastra API（Cloud Run）へ直接リクエストするため、CORS が未設定だと即エラーになる。
-- **推奨**: フェーズ 0 で Mastra API に CORS を入れてから、フロントの手牌入力・API 連携の実装に進む。
+- **方針変更**: ブラウザは Mastra API を直接叩かず、Next.js の API Route（プロキシ）経由で叩く（[cors-strategy.md](./cors-strategy.md) 選択肢 C）。同一オリジンのため **CORS 不要**。フェーズ 0 では Next.js にプロキシ API Route を追加する。
 
 ### 5. ストリーミング（/stream）
 

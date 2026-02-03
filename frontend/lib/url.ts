@@ -1,7 +1,8 @@
+/**
+ * Mastra API のベース URL（クライアント用）
+ * プロキシ採用のため同一オリジンの /api/agents/... を呼ぶ。空文字で相対パスになる。
+ * サーバー側のプロキシは MASTRA_API_URL で Mastra に中継する。
+ */
 export function getBaseUrl(): string {
-  const url = process.env.NEXT_PUBLIC_MASTRA_API_URL;
-  if (!url) {
-    throw new Error("NEXT_PUBLIC_MASTRA_API_URL is not set");
-  }
-  return url.replace(/\/$/, "");
+  return "";
 }

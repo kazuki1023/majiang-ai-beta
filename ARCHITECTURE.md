@@ -25,7 +25,7 @@ flowchart TB
         Gemini["🤖 Gemini API"]
     end
 
-    UI -->|"HTTP (同一プロジェクト)"| API
+    UI -->|"HTTP（Next サーバー→Mastra、プロキシ経由）"| API
     UI -->|"画像アップロード"| GCS
     API -->|"画像OCR"| Vision
     API -->|"会話・分析"| Gemini
@@ -173,22 +173,27 @@ majiang-ai/
 
 ### 手牌分析（テキスト入力）
 
+- ブラウザは **Next.js の同一オリジン**（例: `/api/agents/...`）のみ呼ぶ。Next.js の API Route が Mastra API をプロキシする（[docs/cors-strategy.md](./docs/cors-strategy.md) 選択肢 C）。
+
 ```mermaid
 sequenceDiagram
     participant User as ユーザー
-    participant UI as Next.js Frontend
+    participant Browser as ブラウザ
+    participant Next as Next.js (API Route)
     participant API as Mastra API
     participant Gemini as Gemini API
     participant Lib as majiang-ai
 
-    User->>UI: 手牌を入力
-    UI->>API: POST /api/agents/majiangAnalysisAgent/generate
+    User->>Browser: 手牌を入力
+    Browser->>Next: POST /api/agents/.../generate 等（同一オリジン）
+    Next->>API: POST /api/agents/majiangAnalysisAgent/generate
     API->>Lib: evaluateShoupaiTool
     Lib-->>API: 評価結果
     API->>Gemini: 説明生成
     Gemini-->>API: 説明テキスト
-    API-->>UI: 推奨打牌 + 説明
-    UI-->>User: 結果表示
+    API-->>Next: 推奨打牌 + 説明
+    Next-->>Browser: レスポンス
+    Browser-->>User: 結果表示
 ```
 
 ### 画像認識フロー
@@ -257,11 +262,13 @@ sequenceDiagram
 
 ### Next.js Frontend
 
-| 変数名                       | 説明                   | 例                                       |
-| ---------------------------- | ---------------------- | ---------------------------------------- |
-| `NEXT_PUBLIC_MASTRA_API_URL` | Mastra APIのURL        | `https://majiang-ai-api-xxxxx.a.run.app` |
-| `GCS_BUCKET`                 | Cloud Storage バケット | `majiang-ai-images`                      |
-| `GOOGLE_CLOUD_PROJECT`       | GCPプロジェクトID      | `majiang-ai-project`                     |
+| 変数名                 | 説明                                       | 例                                       |
+| ---------------------- | ------------------------------------------ | ---------------------------------------- |
+| `MASTRA_API_URL`       | Mastra API の URL（**サーバー専用**、プロキシ用） | `https://majiang-ai-api-xxxxx.a.run.app` |
+| `GCS_BUCKET`           | Cloud Storage バケット                     | `majiang-ai-images`                      |
+| `GOOGLE_CLOUD_PROJECT` | GCPプロジェクトID                          | `majiang-ai-project`                     |
+
+- **設計**: ブラウザは Mastra を直接叩かず、Next.js の API Route 経由で叩く。そのため Mastra の URL は `MASTRA_API_URL`（サーバー専用）でよく、`NEXT_PUBLIC_` は不要。Secret Manager で実行時に渡せる（[docs/cors-strategy.md](./docs/cors-strategy.md) 参照）。
 
 ---
 
@@ -385,8 +392,7 @@ images:
 
 1. **認証**: Cloud Run間の通信はIAMで制御可能（必要に応じて設定）
 2. **コールドスタート**: min-instances=1 で回避可能（追加コスト）
-3. **CORS**: UIとAPIは別のCloud Runサービス（別オリジン）のためCORS設定が必要
-   - 詳細は [docs/cors-strategy.md](./docs/cors-strategy.md) を参照
+3. **CORS**: ブラウザは Next.js の同一オリジンのみ叩くため CORS 不要。Next.js の API Route が Mastra API をプロキシする（[docs/cors-strategy.md](./docs/cors-strategy.md) 選択肢 C）。
 4. **ログ**: Cloud Loggingで一元管理
 5. **コスト**: $300のGCPクレジットで十分に運用可能
 6. **画像認識**: 精度検証が必要
