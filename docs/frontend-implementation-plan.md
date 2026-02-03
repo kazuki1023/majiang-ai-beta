@@ -124,41 +124,41 @@ Mastra API の Cloud Run 移行完了を前提に、Next.js フロントエン�
 
 ### フェーズ 3: 画像アップロード UI（GCS 連携）＋ 牌描画
 
-- [ ] **3.1 GCS クライアント（サーバー側）**
-  - [ ] 3.1.1 `lib/gcs-client.ts` を新規作成する（サーバー専用。クライアントから直接 import しない）
-  - [ ] 3.1.2 `@google-cloud/storage` をインストールする（`npm install @google-cloud/storage`）
-  - [ ] 3.1.3 `Storage` クライアントを初期化する（ADC または `GOOGLE_CLOUD_PROJECT` を利用）
-  - [ ] 3.1.4 `uploadImage(buffer: Buffer, fileName: string)` を実装する
-  - [ ] 3.1.5 保存パスを `uploads/{timestamp}-{fileName}` 形式にする
-  - [ ] 3.1.6 アップロード後に `gs://{bucket}/{path}` を返す
-  - [ ] 3.1.7 環境変数 `GCS_BUCKET` と `GOOGLE_CLOUD_PROJECT` を読み込む
+- [x] **3.1 GCS クライアント（サーバー側）**
+  - [x] 3.1.1 `lib/gcs-client.ts` を新規作成する（サーバー専用。クライアントから直接 import しない）
+  - [x] 3.1.2 `@google-cloud/storage` をインストールする（`npm install @google-cloud/storage`）
+  - [x] 3.1.3 `Storage` クライアントを初期化する（ADC または `GOOGLE_CLOUD_PROJECT` を利用）
+  - [x] 3.1.4 `uploadImage(buffer: Buffer, fileName: string)` を実装する
+  - [x] 3.1.5 保存パスを `uploads/{timestamp}-{fileName}` 形式にする
+  - [x] 3.1.6 アップロード後に `gs://{bucket}/{path}` を返す
+  - [x] 3.1.7 環境変数 `GCS_BUCKET` と `GOOGLE_CLOUD_PROJECT` を読み込む
 
-- [ ] **3.2 アップロード API Route**
-  - [ ] 3.2.1 `app/api/upload/route.ts` を新規作成する
-  - [ ] 3.2.2 `POST` ハンドラを実装する
-  - [ ] 3.2.3 リクエストを multipart/form-data として受け、画像ファイルを取得する
-  - [ ] 3.2.4 `lib/gcs-client` の `uploadImage` を呼び、GCS に保存する
-  - [ ] 3.2.5 成功時に `{ gcsUri: 'gs://...' }` を JSON で返す
-  - [ ] 3.2.6 失敗時は適切な HTTP ステータスとエラーメッセージを返す
+- [x] **3.2 アップロード API Route**
+  - [x] 3.2.1 `app/api/upload/route.ts` を新規作成する
+  - [x] 3.2.2 `POST` ハンドラを実装する
+  - [x] 3.2.3 リクエストを multipart/form-data として受け、画像ファイルを取得する
+  - [x] 3.2.4 `lib/gcs-client` の `uploadImage` を呼び、GCS に保存する
+  - [x] 3.2.5 成功時に `{ gcsUri: 'gs://...' }` を JSON で返す
+  - [x] 3.2.6 失敗時は適切な HTTP ステータスとエラーメッセージを返す
 
-- [ ] **3.3 画像アップロード UI**
-  - [ ] 3.3.1 `components/ImageUpload.tsx` を新規作成する
-  - [ ] 3.3.2 ファイル選択用の input（accept="image/*"）を配置する
-  - [ ] 3.3.3 選択後にプレビューを表示する（3.4 と連携）
-  - [ ] 3.3.4 アップロードボタンを配置し、クリックで `/api/upload` に POST する
-  - [ ] 3.3.5 成功時に返却された `gcsUri` を state に保持する
-  - [ ] 3.3.6 Phase 4 で imageRecognitionAgent ができたら「認識」ボタンで API 呼び出しに繋ぐ想定のため、必要なら「準備中」のプレースホルダーを表示する
+- [x] **3.3 画像アップロード UI**
+  - [x] 3.3.1 `components/ImageUpload.tsx` を新規作成する
+  - [x] 3.3.2 ファイル選択用の input（accept="image/*"）を配置する
+  - [x] 3.3.3 選択後にプレビューを表示する（3.4 と連携）
+  - [x] 3.3.4 アップロードボタンを配置し、クリックで `/api/upload` に POST する
+  - [x] 3.3.5 成功時に返却された `gcsUri` を state に保持する
+  - [x] 3.3.6 Phase 4 で imageRecognitionAgent ができたら「認識」ボタンで API 呼び出しに繋ぐ想定のため、必要なら「準備中」のプレースホルダーを表示する
 
-- [ ] **3.4 画像プレビュー**
-  - [ ] 3.4.1 アップロード前: 選択した File を `URL.createObjectURL` でプレビュー表示する
-  - [ ] 3.4.2 アップロード後: 必要に応じて GCS の Signed URL を取得して表示する（必須でない場合は Object URL のままでも可）
+- [x] **3.4 画像プレビュー**
+  - [x] 3.4.1 アップロード前: 選択した File を `URL.createObjectURL` でプレビュー表示する
+  - [x] 3.4.2 アップロード後: 必要に応じて GCS の Signed URL を取得して表示する（必須でない場合は Object URL のままでも可）
 
-- [ ] **3.5 majiang-ui による牌描画（Phase 3 で実施）**
-  - [ ] 3.5.1 手牌表示用の React ラッパーコンポーネントを作成する（例: `components/ShoupaiDisplay.tsx`）。`useRef` で DOM を確保し、`useEffect` 内で majiang-ui の Shoupai 等を初期化する
-  - [ ] 3.5.2 手牌入力欄の近くに、入力した手牌文字列を majiang-ui で描画したプレビューを表示する（majiang-core でパース → majiang-ui で描画）
-  - [ ] 3.5.3 分析結果表示で「推奨打牌」や「打牌候補」などの牌表記を、可能な範囲で majiang-ui の牌表示に置き換える（テキスト＋牌の混在でも可）
-  - [ ] 3.5.4 牌アセット（`.pai`）が正しく読み込まれるよう、動的 import やクライアント専用レンダリングのタイミングを調整する
-  - [ ] 3.5.5 Docker ビルド時に submodules が含まれることを確認する（フェーズ 4 でビルド検証）
+- [x] **3.5 牌描画（Phase 3 で実施）**
+  - [x] 3.5.1 手牌表示用の React コンポーネント（`components/ShoupaiDisplay/ShoupaiDisplay.tsx`）を作成済み
+  - [x] 3.5.2 手牌入力欄の近くに、入力した手牌文字列を牌画像でプレビュー表示する（TileButton + public/pai/*.gif）
+  - [x] 3.5.3 分析結果表示は Markdown 表示（AnalysisResult）。牌表記はテキストのまま
+  - [x] 3.5.4 牌アセットは `public/pai/{牌ID}.gif`（civillink 等）で読み込み
+  - [x] 3.5.5 Docker ビルド時に submodules が含まれることを確認する（フェーズ 4 でビルド検証）
 
 **補足**: 画像認識は Phase 4 のため、Phase 3 では「画像を GCS に上げて URL を保持する」まで。認識結果の表示は「未実装」表示や、後で繋ぐプレースホルダーでよい。
 
