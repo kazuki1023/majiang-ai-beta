@@ -2,6 +2,8 @@
 
 import { ShoupaiDisplay } from "@/components/ShoupaiDisplay";
 import { selectedTilesToShoupaiString, TILE_SET_BY_SUIT } from "@/lib/shoupai-utils";
+import { BaopaiSelector } from "./BaopaiSelector";
+import { LabeledButtonGroup } from "./LabeledButtonGroup";
 import { TileButton } from "./TileButton";
 
 /**
@@ -18,15 +20,15 @@ export interface ShoupaiInputFormProps {
   zhuangfeng: number;
   /** 自風: 自分の席の風（0=東, 1=南, 2=西, 3=北） */
   menfeng: number;
-  /** ドラ表示牌 */
-  baopai: string;
+  /** ドラ表示牌（牌IDの配列、順序は1枚目ドラ・2枚目カンドラ…） */
+  baopai: string[];
   /** 巡目（0〜18程度） */
   xun: number;
   onAddTile: (tileId: string) => void;
   onRemoveAt: (index: number) => void;
   onZhuangfengChange: (value: number) => void;
   onMenfengChange: (value: number) => void;
-  onBaopaiChange: (value: string) => void;
+  onBaopaiChange: (value: string[]) => void;
   onXunChange: (value: number) => void;
   onSubmit: (e: React.FormEvent) => void;
   disabled?: boolean;
@@ -120,70 +122,29 @@ export function ShoupaiInputForm({
         </div>
       </div>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div role="group" aria-labelledby="zhuangfeng-label">
-            <span id="zhuangfeng-label" className="block text-xs font-medium text-zinc-600">
-              場風
-            </span>
-            <div className="mt-0.5 flex gap-0.5 rounded border border-zinc-300 bg-zinc-50/50 p-0.5">
-              {ZHUANGFENG_LABELS.map((label, i) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => onZhuangfengChange(i)}
-                  disabled={disabled}
-                  className={
-                    "min-w-9 flex-1 rounded px-2 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-0 " +
-                    (zhuangfeng === i
-                      ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700 disabled:bg-blue-500"
-                      : "bg-white text-zinc-800 hover:bg-zinc-100 disabled:bg-zinc-100")
-                  }
-                  aria-pressed={zhuangfeng === i}
-                  aria-label={`場風: ${label}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div role="group" aria-labelledby="menfeng-label">
-            <span id="menfeng-label" className="block text-xs font-medium text-zinc-600">
-              自風
-            </span>
-            <div className="mt-0.5 flex gap-0.5 rounded border border-zinc-300 bg-zinc-50/50 p-0.5">
-              {MENFENG_LABELS.map((label, i) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => onMenfengChange(i)}
-                  disabled={disabled}
-                  className={
-                    "min-w-9 flex-1 rounded px-2 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-0 " +
-                    (menfeng === i
-                      ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700 disabled:bg-blue-500"
-                      : "bg-white text-zinc-800 hover:bg-zinc-100 disabled:bg-zinc-100")
-                  }
-                  aria-pressed={menfeng === i}
-                  aria-label={`自風: ${label}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label htmlFor="baopai" className="block text-xs font-medium text-zinc-600">
-              ドラ表示牌
-            </label>
-            <input
-              id="baopai"
-              type="text"
-              value={baopai}
-              onChange={(e) => onBaopaiChange(e.target.value)}
-              placeholder="s3"
-              className="mt-0.5 w-full rounded border border-zinc-300 px-2 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 bg-white"
-              disabled={disabled}
-            />
-          </div>
+          <LabeledButtonGroup
+            label="場風"
+            labelId="zhuangfeng-label"
+            options={ZHUANGFENG_LABELS}
+            value={zhuangfeng}
+            onChange={onZhuangfengChange}
+            disabled={disabled}
+            ariaLabelPrefix="場風: "
+          />
+          <LabeledButtonGroup
+            label="自風"
+            labelId="menfeng-label"
+            options={MENFENG_LABELS}
+            value={menfeng}
+            onChange={onMenfengChange}
+            disabled={disabled}
+            ariaLabelPrefix="自風: "
+          />
+          <BaopaiSelector
+            baopai={baopai}
+            onBaopaiChange={onBaopaiChange}
+            disabled={disabled}
+          />
           <div>
             <label htmlFor="xun" className="block text-xs font-medium text-zinc-600">
               巡目
