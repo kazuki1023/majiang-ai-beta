@@ -3,6 +3,9 @@
  * 画像アップロード用。ADC または GOOGLE_CLOUD_PROJECT を利用する。
  *
  * 開発/本番のデータ分離: 環境ごとに GCS_BUCKET を変える（例: my-app-dev / my-app-prod）。
+ *
+ * 保存パス: docs/gcp/gcs-object-path.md にベストプラクティスを記載。
+ * 日付パーティション: uploads/YYYY/MM/DD/{timestamp}-{fileName}
  */
 
 import { Storage } from "@google-cloud/storage";
@@ -18,8 +21,19 @@ function getStorage(): Storage {
 }
 
 /**
+ * 日付パーティション用の YYYY/MM/DD を返す（UTC）。
+ */
+function getDatePrefix(): string {
+  const now = new Date();
+  const y = now.getUTCFullYear();
+  const m = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(now.getUTCDate()).padStart(2, "0");
+  return `${y}/${m}/${d}`;
+}
+
+/**
  * 画像を GCS にアップロードする。
- * 保存パス: uploads/{timestamp}-{fileName}
+ * 保存パス: uploads/YYYY/MM/DD/{timestamp}-{fileName}
  * @returns gs://{bucket}/{path}
  */
 export async function uploadImage(
@@ -30,7 +44,8 @@ export async function uploadImage(
   const bucket = storage.bucket(bucketName!);
   const timestamp = Date.now();
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const path = `uploads/${timestamp}-${safeName}`;
+  const datePrefix = getDatePrefix();
+  const path = `uploads/${datePrefix}/${timestamp}-${safeName}`;
   const file = bucket.file(path);
   await file.save(buffer, {
     contentType: getContentType(fileName),
