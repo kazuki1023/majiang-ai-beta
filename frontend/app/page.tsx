@@ -1,11 +1,17 @@
 "use client";
 
 import { AnalysisResult } from "@/components/AnalysisResult";
+import { ImageUpload } from "@/components/ImageUpload";
 import { ShoupaiInput } from "@/components/ShoupaiInput";
+import { Tab, TabList, TabPanel, Tabs } from "@/components/Tabs";
 import { streamMajiangAnalysis } from "@/lib/mastra-client";
 import { useRef, useState } from "react";
 
+const TAB_IMAGE = "image";
+const TAB_MANUAL = "manual";
+
 export default function Home() {
+  const [activeTab, setActiveTab] = useState(TAB_IMAGE);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultText, setResultText] = useState("");
@@ -57,7 +63,18 @@ export default function Home() {
         </h1>
 
         <section>
-          <ShoupaiInput onSubmit={handleSubmit} disabled={isLoading} />
+          <Tabs value={activeTab} onChange={setActiveTab}>
+            <TabList>
+              <Tab value={TAB_IMAGE}>写真から</Tab>
+              <Tab value={TAB_MANUAL}>手で入力</Tab>
+            </TabList>
+            <TabPanel value={TAB_IMAGE}>
+              <ImageUpload />
+            </TabPanel>
+            <TabPanel value={TAB_MANUAL}>
+              <ShoupaiInput onSubmit={handleSubmit} disabled={isLoading} />
+            </TabPanel>
+          </Tabs>
         </section>
 
         {isLoading && (
