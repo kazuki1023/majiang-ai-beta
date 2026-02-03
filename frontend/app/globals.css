@@ -10,6 +10,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* 350px 以上で牌サイズを切り替え（mobile:）、640px 以上で sm: */
+  --breakpoint-mobile: 350px;
 }
 
 @media (prefers-color-scheme: dark) {

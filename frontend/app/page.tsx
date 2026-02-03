@@ -1,5 +1,6 @@
 "use client";
 
+import { AnalysisResult } from "@/components/AnalysisResult";
 import { ShoupaiInput } from "@/components/ShoupaiInput";
 import { streamMajiangAnalysis } from "@/lib/mastra-client";
 import { useRef, useState } from "react";
@@ -85,17 +86,11 @@ export default function Home() {
         )}
 
         {resultText && (
-          <section className="rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
-            <h2 className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              分析結果
-            </h2>
-            <div
-              className="whitespace-pre-wrap break-words text-sm text-zinc-800 dark:text-zinc-200"
-              aria-live="polite"
-            >
-              {resultText}
-            </div>
-          </section>
+          <AnalysisResult
+            content={resultText}
+            isStreaming={isLoading}
+            title="分析結果"
+          />
         )}
       </main>
     </div>

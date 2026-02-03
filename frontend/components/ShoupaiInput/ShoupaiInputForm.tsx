@@ -1,6 +1,7 @@
 "use client";
 
-import { getTileLabel, TILE_SET_BY_SUIT } from "@/lib/shoupai-utils";
+import { ShoupaiDisplay } from "@/components/ShoupaiDisplay";
+import { selectedTilesToShoupaiString, TILE_SET_BY_SUIT } from "@/lib/shoupai-utils";
 import { TileButton } from "./TileButton";
 
 /**
@@ -73,21 +74,16 @@ export function ShoupaiInputForm({
           aria-live="polite"
         >
           {selectedTiles.length === 0 ? (
-            <p className="text-sm text-zinc-500">牌を下から選んでください</p>
+            <p className="text-sm text-zinc-500 h-9">牌を下から選んでください</p>
           ) : (
-            <ul className="flex flex-wrap gap-0.5 sm:gap-1.5">
-              {selectedTiles.map((tileId, index) => (
-                <li key={`${tileId}-${index}`}>
-                  <TileButton
-                    label={getTileLabel(tileId)}
-                    onClick={() => onRemoveAt(index)}
-                    disabled={disabled}
-                    title={`${getTileLabel(tileId)} を削除`}
-                    ariaLabel={`${getTileLabel(tileId)} を削除`}
-                  />
-                </li>
-              ))}
-            </ul>
+            <div className="text-sm text-zinc-500 h-9">
+              <ShoupaiDisplay
+                paistr={selectedTilesToShoupaiString(selectedTiles)}
+                onRemoveAt={onRemoveAt}
+                disabled={disabled}
+                className="mb-1"
+              />
+            </div>
           )}
         </div>
       </div>
@@ -109,6 +105,7 @@ export function ShoupaiInputForm({
                   return (
                     <TileButton
                       key={tile.id}
+                      tileId={tile.id}
                       label={tile.label}
                       onClick={() => addable && onAddTile(tile.id)}
                       disabled={disabled || !addable}
