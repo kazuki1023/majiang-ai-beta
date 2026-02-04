@@ -5,10 +5,15 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { ShoupaiInput } from "@/components/ShoupaiInput";
 import { Tab, TabList, TabPanel, Tabs } from "@/components/Tabs";
 import { streamMajiangAnalysis } from "@/lib/mastra-client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const TAB_IMAGE = "image";
 const TAB_MANUAL = "manual";
+
+/** 1回で届いたテキストを少しずつ表示する刻み幅 */
+const STREAM_CHUNK_SIZE = 24;
+/** 刻み間隔（ms） */
+const STREAM_CHUNK_MS = 28;
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState(TAB_IMAGE);
@@ -16,6 +21,25 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [resultText, setResultText] = useState("");
   const abortControllerRef = useRef<AbortController | null>(null);
+  /** 受信した全文（表示は resultText がこれに追いつくまで徐々に） */
+  const pendingTextRef = useRef("");
+  const streamIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setResultText((prev) => {
+        const target = pendingTextRef.current;
+        if (prev.length >= target.length) return prev;
+        const nextLen = Math.min(prev.length + STREAM_CHUNK_SIZE, target.length);
+        return target.slice(0, nextLen);
+      });
+    }, STREAM_CHUNK_MS);
+    streamIntervalRef.current = id;
+    return () => {
+      if (streamIntervalRef.current) clearInterval(streamIntervalRef.current);
+      streamIntervalRef.current = null;
+    };
+  }, []);
 
   const handleSubmit = async (content: string) => {
     const controller = new AbortController();
@@ -24,6 +48,7 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
     setResultText("");
+    pendingTextRef.current = "";
 
     try {
       await streamMajiangAnalysis(
@@ -31,14 +56,16 @@ export default function Home() {
         {
           signal: controller.signal,
           onTextDelta: (delta) => {
-            setResultText((prev) => prev + delta);
+            pendingTextRef.current += delta;
           },
         }
       );
     } catch (err) {
       if (err instanceof Error) {
         if (err.name === "AbortError") {
-          setResultText((prev) => prev + "\n\n[キャンセルされました]");
+          const final = pendingTextRef.current + "\n\n[キャンセルされました]";
+          pendingTextRef.current = final;
+          setResultText(final);
         } else {
           setError(err.message);
         }
