@@ -1,10 +1,10 @@
 /**
- * GCS 上の画像を GPT-4o Vision で解析し、手牌文字列を返すツール
+ * GCS 上の画像を GPT-5.2 Vision で解析し、手牌文字列を返すツール
  * 手法 5 の比較検討用。Gemini 版は recognize-shoupai-from-gcs.ts を利用すること。
  */
 
-import OpenAI from 'openai';
 import { createTool } from '@mastra/core/tools';
+import OpenAI from 'openai';
 import { z } from 'zod';
 import {
   downloadImageFromGcs,
@@ -12,12 +12,12 @@ import {
   SHOUPAI_PROMPT,
 } from './shared';
 
-const MODEL = 'gpt-4o';
+const MODEL = 'gpt-5.2';
 
 export const recognizeShoupaiFromGcsGpt4oTool = createTool({
-  id: 'recognize-shoupai-from-gcs-gpt4o',
+  id: 'recognize-shoupai-from-gcs-gpt5.2',
   description:
-    'GCS上の手牌画像（gs://...）を GPT-4o Vision で解析し、手牌文字列（例: m123p456s789z12）を返す',
+    'GCS上の手牌画像（gs://...）を GPT-5.2 Vision で解析し、手牌文字列（例: m123p456s789z12）を返す',
   inputSchema: z.object({
     gcsUri: z
       .string()
@@ -32,10 +32,10 @@ export const recognizeShoupaiFromGcsGpt4oTool = createTool({
     rawResponse: z
       .string()
       .optional()
-      .describe('GPT-4o の生の応答（デバッグ用）'),
+      .describe('GPT-5.2 の生の応答（デバッグ用）'),
   }),
   execute: async ({ context }) => {
-    const LOG_PREFIX = '[recognize-shoupai-gpt4o]';
+    const LOG_PREFIX = '[recognize-shoupai-gpt5.2]';
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -61,14 +61,15 @@ export const recognizeShoupaiFromGcsGpt4oTool = createTool({
           ],
         },
       ],
-      max_tokens: 256,
+      // max_tokens: 256, gpt4o 用
+      max_completion_tokens: 256,
     });
 
     const text =
       completion.choices[0]?.message?.content?.trim() ?? '';
     const shoupaiString = extractShoupaiString(text);
 
-    console.log(`${LOG_PREFIX} gpt4o rawResponse="${text}"`);
+    console.log(`${LOG_PREFIX} gpt5.2 rawResponse="${text}"`);
     console.log(`${LOG_PREFIX} extracted shoupaiString="${shoupaiString}"`);
     const tileCount = shoupaiString
       ? (shoupaiString.match(/[mpsz]\d/g)?.length ?? 0)

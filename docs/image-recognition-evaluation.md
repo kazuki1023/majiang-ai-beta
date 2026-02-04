@@ -155,7 +155,9 @@ flowchart LR
 - [ ] 手法 2: Cloud Vision ラベル検出 + Gemini
 - [ ] 手法 3: Cloud Vision 物体検出 + Gemini
 - [x] 手法 4: Gemini Vision 直接
-- [ ] 手法 5: GPT-4o Vision
+- [x] 手法 5: GPT-4o Vision
+- [x] 手法 6: GPT-5.2 Vision
+- [x] 手法 7: Gemini 3.0 Vision
 
 ### Phase 3: 精度評価
 
@@ -176,14 +178,6 @@ flowchart LR
 ---
 
 ## 検証結果
-
-### テストデータ
-
-| ID | 画像 | 正解ラベル | 備考 |
-|----|------|------------|------|
-| 1 | TODO | TODO | |
-| 2 | TODO | TODO | |
-| ... | | | |
 
 ### 手法 1: Cloud Vision OCR + Gemini
 
@@ -232,13 +226,13 @@ flowchart LR
 | [virtual01](./images/virtual/01.jpg) | m12345p56s3490z22 | m12345z22p999 | 7/14 | ❌ | そもそも10枚しか認識できていない。萬子と字牌は認識出ているが、それ以外はだめ |
 | [virtual02](./images/virtual/02.png) | m11124779p8s5z67 | m11124779p8s5z6 | 12/13 | ❌ |  |
 | [virtual03](./images/virtual/03.png) | m6p113456790s5z456 | m6p113456790s5z456 | 8/14 | ❌ | 白は認識できないのはもちろん、pも認識できない |
-| [virtual04](./images/virtual/04.png) | m4p46s123456689z24 | m4p222s11223344z24 | 7/14 | ❌ | pもsもだめ |
+| [virtual04](./images/virtual/04.png) | m4p46s123456680z24 | m4p222s11223344z24 | 7/14 | ❌ | pもsもだめ |
 | [virtual05](./images/virtual/05.png) | m2358p348s190z2256 | m2308p466s234z226 | 7/14 | ❌ | pもsもだめ、白が認識できない。赤5ｍと黒5ｍが混同している |
 
 - 対面の精度
 | 手牌写真 | 期待する結果 | 認識結果 | 牌単位正解 | 完全一致 | 備考 |
 |----|----------|----------|------------|----------|------|
-| [real01](./images/real/01.png) | m234677890p567s45 | m234567789p0p5s2 | 9/14 | ❌ | sが認識できない、pもあやしい、0m以外はいけそう |
+| [real01](./images/real/01.png) | m12345s3490p56z22 | m234567789p0p5s2 | 9/14 | ❌ | sが認識できない、pもあやしい、0m以外はいけそう |
 | [real02](./images/real/02.png) | m67s34455660p456 | m67m222m5555p33p0 | 2/14 | ❌ | 索子を萬子だと認識しだした |
 | [real03](./images/real/03.png) | m234p12233456z44 | m234p12355678z44 | 10/14 | ❌ |  |
 | [real04](./images/real/04.png) | m79p23s4699z12457 | m1111222233p30z12755 | 4/14 | ❌ | 17枚に認識している。架空の萬子を認識している。字牌も逆向きだからか精度が悪い。 |
@@ -259,14 +253,118 @@ flowchart LR
 
 ### 手法 5: GPT-4o Vision
 
-| ID | 認識結果 | 牌単位正解 | 完全一致 | 備考 |
-|----|----------|------------|----------|------|
-| 1 | TODO | /14 | ✅/❌ | |
-| 2 | TODO | /14 | ✅/❌ | |
+- **呼び出し**: `POST /api/agents/imageRecognitionGpt4oAgent/generate`、body は `{ "messages": [{ "role": "user", "content": "gs://..." }] }`。要 `OPENAI_API_KEY`。
+- **ツール**: `recognize-shoupai-from-gcs-gpt4o`（GCS 取得＋GPT-4o で画像認識）。プロンプト・抽出ロジックは手法 4 と共通（`shared.ts`）。
 
-**平均精度:** TODO  
+- スクリーンショットの精度
+| 手牌写真 | 期待する結果 | 認識結果 | 牌単位正解 | 完全一致 | 備考 |
+|----|----------|----------|------------|----------|------|
+| [virtual01](./images/virtual/01.jpg) | m234677890p567s45 | m23456789p556s222 | 9/14 | ❌ | sが認識できない、pもあやしい、0m以外はいけそう |
+| [virtual02](./images/virtual/02.png) | m11124779p8s5z67 | m11124779p5s33z6 | 12/13 | ❌ | 12枚しか認識できていない。白が認識できない。p、sが全然違う |
+| [virtual03](./images/virtual/03.png) | m6p113456790s5z456 | m6p008p34p445566s5z47 | 7/14 | ❌ | 15枚認識している。pの間違いが多い。5sはあっている。 |
+| [virtual04](./images/virtual/04.png) | m4p46s123456680z24 | m4p66s123345607z24 | 11/14 | ❌ |  |
+| [virtual05](./images/virtual/05.png) | m2358p348s190z2256 | m2358p0p55s678z226 | 7/14 | ❌ | 白が認識できない。5mの区別はできている。 |
+
+- 対面の精度
+| 手牌写真 | 期待する結果 | 認識結果 | 牌単位正解 | 完全一致 | 備考 |
+|----|----------|----------|------------|----------|------|
+| [real01](./images/real/01.png) | m12345s3490p56z22 | m12345s223334p556 | 9/14 | ❌ | 字牌が認識できなくなっている |
+| [real02](./images/real/02.png) | m67s34455660p456 | m678s555s0s677p234 | 7/14 | ❌ | s、ｐの区別ができていない |
+| [real03](./images/real/03.png) | m234p12233456z44 | m2344p147799s99z44 | 8/14 | ❌ | 存在しない索子を認識している |
+| [real04](./images/real/04.png) | m79p23s4699z12457 | s333444p115z12367 | 4/14 | ❌ |  |
+| [real05](./images/real/05.png) | m2356p3444588s46 | p333p0p23444m23s6666 | 7/14 | ❌ | p適当すぎる |
+
+**平均精度:**
+- スクリーンショット（5枚）: 46/69 ≒ **66.7%**（9+12+7+11+7、virtual02 は 13 枚手牌）
+- 対面（5枚）: 35/70 = **50.0%**（9+7+8+4+7）
+- **全体（10枚）: 81/139 ≒ 58.3%**
+- 完全一致: 0/10
+
 **レイテンシ:** TODO  
 **コスト:** TODO
+
+---
+
+## 最新モデルでの検証（GPT-5.2 / Gemini 3.0）
+
+- **OpenAI 最新モデル**: [Using GPT-5.2 \| OpenAI API](https://platform.openai.com/docs/guides/latest-model#quickstart) — `gpt-5.2` はマルチモーダル（画像含む）対応。Vision は Chat Completions または Responses API で利用可能。
+- **Gemini 最新モデル・料金**: [Gemini Developer API の料金](https://ai.google.dev/gemini-api/docs/pricing?hl=ja) — Gemini 3 Pro / 3 Flash など。画像入力は「テキスト/画像/動画」の入力単価で課金。
+
+検証時は同一のテスト画像（手法 4・5 と同じ virtual01–05, real01–05）を使い、牌単位正解・完全一致・レイテンシ・コストを記録する。
+
+---
+
+### 手法 6: GPT-5.2 Vision
+
+- **モデル**: `gpt-5.2`（または Mastra 上の `openai/gpt-5.2` 等、利用可能な ID に合わせる）
+- **呼び出し**: ツール側で model を `gpt-5.2` に変更したエージェント、または `POST /api/agents/imageRecognitionGpt5Agent/generate` 等（実装に応じて記載）
+- **参考**: [Latest: GPT-5.2](https://platform.openai.com/docs/guides/latest-model#quickstart)
+
+- スクリーンショットの精度
+
+| 手牌写真 | 期待する結果 | 認識結果 | 牌単位正解 | 完全一致 | 備考 |
+|----|----------|----------|------------|----------|------|
+| [virtual01](./images/virtual/01.jpg) | m234677890p567s45 | m134567789p236s1113 | 7/14 | ❌ | |
+| [virtual02](./images/virtual/02.png) | m11124779p8s5z67 | m111147799p8s2z6 | 9/13 | ❌ | 2mと1ｍをまちがえた | |
+| [virtual03](./images/virtual/03.png) | m6p113456790s5z456 | m6p115667789s5z4z6 | 9/14 | ❌ | pの56789が認識できない |
+| [virtual04](./images/virtual/04.png) | m4p46s123456680z24 | m4p224s11222334445567z24 | 11/14 | ❌ | 20枚も認識しているので一見精度が高そうに見えるがそうではない。 |
+| [virtual05](./images/virtual/05.png) | m2358p348s190z2256 | m2358p05s789z226 | 8/14 | ❌ | pもsもだめ。萬子と字牌は正しい |
+
+- 対面の精度
+
+| 手牌写真 | 期待する結果 | 認識結果 | 牌単位正解 | 完全一致 | 備考 |
+|----|----------|----------|------------|----------|------|
+| [real01](./images/real/01.png) | m12345s3490p56z22 | m12345s22355z22p44 | 9/14 | ❌ |  |
+| [real02](./images/real/02.png) | m67s34455660p456 | z77s2222333344p44455 | 6/14 | ❌ | 適当に返している |
+| [real03](./images/real/03.png) | m234p12233456z44 | m3334p1222455567z44 | 9/14 | ❌ | 萬子も間違えている |
+| [real04](./images/real/04.png) | m79p23s4699z12457 | s111p235z14577 | 6/14 | ❌ | 索子はどんな間違いをするかわからないぐらい間違える |
+| [real05](./images/real/05.png) | m2356p3444588s46 | p22256m22347s2222p11 | 3/14 | ❌ | |
+
+**平均精度:**
+- スクリーンショット（5枚）: 44/69 ≒ **63.8%**（7+9+9+11+8、virtual02 は 13 枚手牌）
+- 対面（5枚）: 33/70 ≒ **47.1%**（9+6+9+6+3）
+- **全体（10枚）: 77/139 ≒ 55.4%**
+- 完全一致: 0/10
+
+**レイテンシ:** TODO  
+**コスト:** TODO（[OpenAI Pricing](https://platform.openai.com/docs/pricing) 参照）
+
+---
+
+### 手法 7: Gemini 3.0 Vision
+
+- **モデル**: `gemini-3-flash-preview`（[料金ページ](https://ai.google.dev/gemini-api/docs/pricing?hl=ja)で利用可能なモデル ID を確認）
+- **呼び出し**: ツール側で model を Gemini 3 系に変更したエージェント、または別エンドポイント（実装に応じて記載）
+- **参考**: [Gemini Developer API の料金](https://ai.google.dev/gemini-api/docs/pricing?hl=ja)（Gemini 3 Pro / 3 Flash の入力・出力単価）
+
+- スクリーンショットの精度
+
+| 手牌写真 | 期待する結果 | 認識結果 | 牌単位正解 | 完全一致 | 備考 |
+|----|----------|----------|------------|----------|------|
+| [virtual01](./images/virtual/01.jpg) | m234677890p567s45 | m234067789p067s40 | 12/14 | ❌ | 赤5pと赤5sを間違えただけで |
+| [virtual02](./images/virtual/02.png) | m11124779p8s5z56 | m11124779p8s5z56 | 12/12 | ✅| |
+| [virtual03](./images/virtual/03.png) | m6p113456790s5z456 | m6p113450679s5z456 | 14/14 | ✅ | |
+| [virtual04](./images/virtual/04.png) | m4p46s123456680z24 | m4p46s123400668z24 | 13/14 | ❌ | 黒5sと赤5ｓを間違えた |
+| [virtual05](./images/virtual/05.png) | m2358p348s190z2256 | m2358p348s156z2256 | 13/14 | ❌ | 赤5と黒5sを間違えた |
+
+- 対面の精度
+
+| 手牌写真 | 期待する結果 | 認識結果 | 牌単位正解 | 完全一致 | 備考 |
+|----|----------|----------|------------|----------|------|
+| [real01](./images/real/01.png) | m12345s3490p56z22 | m12345p569s3689z22 | 11/14 | ❌ | sとpを間違える |
+| [real02](./images/real/02.png) | m67s34455660p456 | m67p456s34450566 | 14/14 | ✅ | 30秒以上かかっている |
+| [real03](./images/real/03.png) | m234p12233456z44 | m234p122334458z44 | 13/14 | ❌ | 4pが1つ多いだけ |
+| [real04](./images/real/04.png) | m79p23s4699z12457 | m79p23s4699z12457 | 14/14 | ✅ | 逆さまの牌でも正解できる |
+| [real05](./images/real/05.png) | m2356p3444588s46 | m2356p0344488s46 | 12/13 | ❌ | 黒5pと赤5pを間違える |
+
+**平均精度:**
+- スクリーンショット（5枚）: 64/68 ≒ **94.1%**（12+12+14+13+13、virtual02 は 12 枚手牌）
+- 対面（5枚）: 64/69 ≒ **92.8%**（11+14+13+14+12、real05 は 13 枚で集計）
+- **全体（10枚）: 128/137 ≒ 93.4%**
+- 完全一致: 4/10（virtual02, virtual03, real02, real04）
+
+**レイテンシ:** TODO（real02 で 30 秒以上かかったとの記録あり）  
+**コスト:** TODO（[Gemini API 料金](https://ai.google.dev/gemini-api/docs/pricing?hl=ja) 参照）
 
 ---
 
@@ -277,8 +375,10 @@ flowchart LR
 | 1: OCR + Gemini | TODO | TODO | TODO | |
 | 2: ラベル + Gemini | TODO | TODO | TODO | |
 | 3: 物体検出 + Gemini | TODO | TODO | TODO | |
-| 4: Gemini直接 | TODO | TODO | TODO | |
-| 5: GPT-4o | TODO | TODO | TODO | |
+| 4: Gemini直接 | 74/139 ≒ 53.2% | 体感3〜5秒 | TODO | 完全一致 0/10 |
+| 5: GPT-4o | 81/139 ≒ 58.3% | TODO | TODO | 完全一致 0/10 |
+| 6: GPT-5.2 Vision | 77/139 ≒ 55.4% | TODO | TODO | 完全一致 0/10 |
+| 7: Gemini 3.0 Vision | 128/137 ≒ 93.4% | TODO | TODO | 完全一致 4/10 |
 
 ---
 
@@ -286,63 +386,23 @@ flowchart LR
 
 | 項目 | 決定 | 理由 |
 |------|------|------|
-| 採用手法 | **TODO: 決定** | |
-| フォールバック | **TODO: 決定** | |
+| 採用手法 | **Gemini 3 Flash（gemini-3-flash-preview）** | 精度が他手法より圧倒的に高い（全体 93.4%、完全一致 4/10）。他モデル（GPT-4o / GPT-5.2 / 旧 Gemini）はレスポンスは早いが精度が低く実用に耐えない。 |
+| フォールバック | **当面は見送り** | 遅延時のみ別モデルに切り替えるより、UI/UX で待ち時間を許容させる方針。 |
 
----
+### 方針の背景
 
-## 実装サンプル
-
-### 手法 4: Gemini Vision 直接
-
-```typescript
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import * as fs from "fs";
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-
-async function recognizeTiles(imagePath: string): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-
-  const imageData = fs.readFileSync(imagePath);
-  const base64Image = imageData.toString("base64");
-
-  const prompt = `
-    この画像は麻雀の手牌（14枚）です。
-    左から順に各牌を認識し、以下の形式で出力してください:
-    
-    形式:
-    - 萬子: m + 数字（例: m1 = 一萬, m9 = 九萬）
-    - 筒子: p + 数字（例: p1 = 一筒, p9 = 九筒）
-    - 索子: s + 数字（例: s1 = 一索, s9 = 九索）
-    - 字牌: z + 数字（1=東, 2=南, 3=西, 4=北, 5=白, 6=發, 7=中）
-    
-    出力例: m123p456s789z1234
-    
-    牌文字列のみを出力してください。説明は不要です。
-  `;
-
-  const result = await model.generateContent([
-    prompt,
-    {
-      inlineData: {
-        mimeType: "image/jpeg",
-        data: base64Image,
-      },
-    },
-  ]);
-
-  return result.response.text().trim();
-}
-```
+- **他モデル**: レスポンスは早いが精度が悪く使い物にならない（50〜66% 程度）。
+- **Gemini 3 Flash**: 精度は良いが時間がかかる（例: real02 で 30 秒以上）。
+- **Cloud Vision（OCR / 物体検出）**: 精度向上の可能性はあるが、「時間がかかる」解消にはつながらない可能性が高く、工数もかさむ。
+- **結論**: いったん **gemini-3-flash-preview で進め、UI/UX の改善**（ローディング表示・待ち時間の明示・結果の確認・修正しやすさなど）に工数を振り向ける。必要になった段階で Cloud Vision の組み合わせを検討する。
 
 ---
 
 ## 次のステップ
 
-- [ ] テスト画像の収集
-- [ ] 正解ラベルの作成
-- [ ] 各手法の実装
-- [ ] 精度検証の実施
-- [ ] 結果に基づき採用手法を決定
-- [ ] image-to-paipu-design.md を更新
+- [x] テスト画像の収集
+- [x] 正解ラベルの作成
+- [x] 手法 4・5・6・7 の実装・精度検証
+- [x] 結果に基づき採用手法を決定（Gemini 3 Flash）
+- [ ] 画像認識の UI/UX 改善（ローディング表示・待ち時間の明示・認識結果の確認・修正フロー）
+- [ ] 必要に応じて image-to-paipu-design.md を更新

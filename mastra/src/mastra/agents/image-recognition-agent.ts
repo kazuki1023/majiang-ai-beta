@@ -10,6 +10,6 @@ export const imageRecognitionAgent = new Agent({
 - ツールの結果に含まれる shoupaiString を、ユーザーへの返答としてそのまま返してください。説明文は不要です。手牌文字列のみを返すことで、フロントエンドがそのまま手牌入力欄に反映できます。
 - content が gs:// で始まっていない場合は「手牌画像の GCS URI（gs://...）を送ってください」と返してください。
 `.trim(),
-  model: 'google/gemini-2.0-flash',
+  model: 'google/gemini-3-flash-preview',
   tools: { recognizeShoupaiFromGcsTool },
 });
