@@ -14,12 +14,12 @@ const SHOUPAI_PROMPT = `
 画像に写っている手牌を、以下の形式の文字列のみで答えてください。説明や余計な文字は一切付けないでください。
 
 形式:
-- 萬子: m + 数字（例: m123 = 一萬、二萬、三萬）
-- 筒子: p + 数字（例: p456 = 四筒、五筒、六筒）
-- 索子: s + 数字（例: s789 = 七索、八索、九索）
-- 字牌: z + 数字（1=東, 2=南, 3=西, 4=北, 5=白, 6=發, 7=中）
+- 萬子: m + 数字（例: m123 = 一萬、二萬、三萬）。赤五萬は m0
+- 筒子: p + 数字（例: p456 = 四筒、五筒、六筒）。赤五筒は p0
+- 索子: s + 数字（例: s789 = 七索、八索、九索）。赤五索は s0
+- 字牌: z + 数字（1=東, 2=南, 3=西, 4=北, 5=白, 6=發, 7=中）。字牌に赤はなし
 
-例: m123p1234789s3388
+例: m123p1234789s3388（赤五がある場合は m0, p0, s0 を使う）
 
 手牌のみを認識してください。場風・自風・ドラ・巡目は無視してください。
 見えない牌や不明な部分がある場合は、分かる範囲で答えてください。14枚に満たない場合も、認識できた分だけ答えてください。
@@ -77,13 +77,18 @@ export const recognizeShoupaiFromGcsTool = createTool({
     rawResponse: z.string().optional().describe('Gemini の生の応答（デバッグ用）'),
   }),
   execute: async ({ context }) => {
+    const LOG_PREFIX = '[recognize-shoupai]';
+
     const apiKey = process.env.GOOGLE_API_KEY ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     if (!apiKey) {
       throw new Error('GOOGLE_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY is not set');
     }
 
+    console.log(`${LOG_PREFIX} input gcsUri=${context.gcsUri}`);
+
     const { buffer, mimeType } = await downloadImageFromGcs(context.gcsUri);
     const base64 = buffer.toString('base64');
+    console.log(`${LOG_PREFIX} image size=${buffer.length} bytes, mimeType=${mimeType}`);
 
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
@@ -100,6 +105,11 @@ export const recognizeShoupaiFromGcsTool = createTool({
     });
     const text = (response.text ?? '').trim();
     const shoupaiString = extractShoupaiString(text);
+
+    console.log(`${LOG_PREFIX} gemini rawResponse="${text}"`);
+    console.log(`${LOG_PREFIX} extracted shoupaiString="${shoupaiString}"`);
+    const tileCount = shoupaiString ? (shoupaiString.match(/[mpsz]\d/g)?.length ?? 0) : 0;
+    console.log(`${LOG_PREFIX} done shoupaiString.length=${shoupaiString.length} tileCount=${tileCount}`);
 
     return {
       shoupaiString: shoupaiString || text,
