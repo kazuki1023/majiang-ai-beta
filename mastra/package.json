@@ -28,6 +28,7 @@
     "@mastra/libsql": "^0.16.4",
     "@mastra/loggers": "^0.10.19",
     "@mastra/memory": "^0.15.13",
+    "openai": "^6.17.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {
