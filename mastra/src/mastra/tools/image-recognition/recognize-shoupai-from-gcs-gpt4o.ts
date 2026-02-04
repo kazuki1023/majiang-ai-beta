@@ -1,11 +1,12 @@
 /**
  * GCS 上の画像を GPT-5.2 Vision で解析し、手牌文字列を返すツール
- * 手法 5 の比較検討用。Gemini 版は recognize-shoupai-from-gcs.ts を利用すること。
+ * 共通型: RecognizeShoupaiOutput（docs/shared-types-design.md §4.6）
  */
 
 import { createTool } from '@mastra/core/tools';
 import OpenAI from 'openai';
 import { z } from 'zod';
+import type { RecognizeShoupaiOutput } from '../../types';
 import {
   downloadImageFromGcs,
   extractShoupaiString,
@@ -14,27 +15,27 @@ import {
 
 const MODEL = 'gpt-5.2';
 
+const recognizeShoupaiOutputSchema = z.object({
+  shoupaiString: z.string(),
+  rawResponse: z.string().optional(),
+  error: z
+    .object({
+      code: z.string().optional(),
+      message: z.string(),
+      details: z.unknown().optional(),
+    })
+    .optional(),
+});
+
 export const recognizeShoupaiFromGcsGpt4oTool = createTool({
   id: 'recognize-shoupai-from-gcs-gpt5.2',
   description:
     'GCS上の手牌画像（gs://...）を GPT-5.2 Vision で解析し、手牌文字列（例: m123p456s789z12）を返す',
   inputSchema: z.object({
-    gcsUri: z
-      .string()
-      .describe(
-        'GCS の画像 URI。例: gs://majiang-ai-images/uploads/2025/02/04/xxx.jpg'
-      ),
+    gcsUri: z.string().describe('GCS の画像 URI'),
   }),
-  outputSchema: z.object({
-    shoupaiString: z
-      .string()
-      .describe('認識した手牌文字列（例: m123p1234789s3388）'),
-    rawResponse: z
-      .string()
-      .optional()
-      .describe('GPT-5.2 の生の応答（デバッグ用）'),
-  }),
-  execute: async ({ context }) => {
+  outputSchema: recognizeShoupaiOutputSchema,
+  execute: async ({ context }): Promise<RecognizeShoupaiOutput> => {
     const LOG_PREFIX = '[recognize-shoupai-gpt5.2]';
 
     const apiKey = process.env.OPENAI_API_KEY;

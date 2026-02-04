@@ -1,10 +1,11 @@
 /**
- * 牌の視覚化ツール
- * 牌の文字列を読みやすい形式に変換
+ * 牌の視覚化ツール・関数
+ * 共通型: docs/shared-types-design.md §4.7。FormatTilesInput / FormatTilesOutput に合わせる。
  */
 
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
+import type { FormatTilesInput, FormatTilesOutput } from '../../../types';
 
 /**
  * 牌の読みやすい名前マッピング
@@ -95,46 +96,57 @@ function formatTileArray(tiles: string[]): string {
 }
 
 /**
- * 牌の視覚化関数
+ * 牌の視覚化関数（共通型 FormatTilesInput / FormatTilesOutput）
+ * 空オブジェクトの場合は formatted: '' を返す。
  */
-export function formatTiles(params: {
-  tiles?: string[];
-  shoupai?: string;
-}): {
-  formatted: string;
-} {
+export function formatTiles(
+  params: FormatTilesInput | { shoupai?: undefined; tiles?: undefined }
+): FormatTilesOutput {
   if (params.shoupai) {
-    return {
-      formatted: formatShoupai(params.shoupai),
-    };
-  } else if (params.tiles && params.tiles.length > 0) {
-    return {
-      formatted: formatTileArray(params.tiles),
-    };
-  } else {
-    return {
-      formatted: '',
-    };
+    return { formatted: formatShoupai(params.shoupai) };
   }
+  if (params.tiles && params.tiles.length > 0) {
+    return { formatted: formatTileArray(params.tiles) };
+  }
+  return { formatted: '' };
+}
+
+/** 手牌形式の文字列かどうか（m/p/s/z + 数字） */
+function isShoupaiString(s: unknown): s is string {
+  return typeof s === 'string' && /^[mpsz]\d/i.test(s.trim());
 }
 
 /**
- * 牌の視覚化ツール
+ * 牌の視覚化ツール（共通型 FormatTilesOutput）。設計上 LLM には渡さない想定。
  */
 export const formatTilesTool = createTool({
   id: 'format-tiles',
-  description: '牌の文字列を読みやすい形式に変換します。手牌文字列や牌の配列を視覚的に表現できます。',
+  description:
+    '牌を読みやすい形式に変換します。手牌文字列（例: "m123p1234789s3388"）を渡す場合は shoupai に渡してください。牌の配列（例: ["m1","m2","s3"]）の場合は tiles に渡してください。',
   inputSchema: z.object({
-    tiles: z.array(z.string()).optional().describe('牌の配列（例: ["m1", "m2", "s3"]）'),
-    shoupai: z.string().optional().describe('手牌文字列（例: "m123p1234789s3388"）'),
+    tiles: z
+      .union([z.array(z.string()), z.string()])
+      .optional()
+      .describe('牌の配列（例: ["m1","m2","s3"]）。手牌文字列を渡した場合も手牌として解釈されます。'),
+    shoupai: z
+      .union([z.string(), z.boolean()])
+      .optional()
+      .describe('手牌文字列（例: "m123p1234789s3388"）。true/false は無視されます。'),
   }),
-  outputSchema: z.object({
-    formatted: z.string().describe('視覚化された牌の文字列（名前形式）'),
-  }),
-  execute: async ({ context }) => {
-    return formatTiles({
-      tiles: context.tiles,
-      shoupai: context.shoupai,
-    });
+  outputSchema: z.object({ formatted: z.string() }),
+  execute: async ({ context }): Promise<FormatTilesOutput> => {
+    const rawTiles = context.tiles;
+    const rawShoupai = context.shoupai;
+    const shoupaiStr = typeof rawShoupai === 'string' ? rawShoupai : undefined;
+    if (typeof rawTiles === 'string' && isShoupaiString(rawTiles)) {
+      return formatTiles({ shoupai: rawTiles });
+    }
+    if (Array.isArray(rawTiles) && rawTiles.length > 0) {
+      return formatTiles({ tiles: rawTiles });
+    }
+    if (shoupaiStr) {
+      return formatTiles({ shoupai: shoupaiStr });
+    }
+    return formatTiles({});
   },
 });

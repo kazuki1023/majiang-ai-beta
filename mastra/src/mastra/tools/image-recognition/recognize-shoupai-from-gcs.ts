@@ -1,15 +1,29 @@
 /**
  * GCS 上の画像を Gemini Vision で解析し、手牌文字列を返すツール
+ * 共通型: RecognizeShoupaiInput / RecognizeShoupaiOutput（docs/shared-types-design.md §4.6）
  */
 
 import { GoogleGenAI } from '@google/genai';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
+import type { RecognizeShoupaiOutput } from '../../types';
 import {
   downloadImageFromGcs,
   extractShoupaiString,
   SHOUPAI_PROMPT,
 } from './shared';
+
+const recognizeShoupaiOutputSchema = z.object({
+  shoupaiString: z.string(),
+  rawResponse: z.string().optional(),
+  error: z
+    .object({
+      code: z.string().optional(),
+      message: z.string(),
+      details: z.unknown().optional(),
+    })
+    .optional(),
+});
 
 export const recognizeShoupaiFromGcsTool = createTool({
   id: 'recognize-shoupai-from-gcs',
@@ -17,11 +31,8 @@ export const recognizeShoupaiFromGcsTool = createTool({
   inputSchema: z.object({
     gcsUri: z.string().describe('GCS の画像 URI。例: gs://majiang-ai-images/uploads/2025/02/04/xxx.jpg'),
   }),
-  outputSchema: z.object({
-    shoupaiString: z.string().describe('認識した手牌文字列（例: m123p1234789s3388）'),
-    rawResponse: z.string().optional().describe('Gemini の生の応答（デバッグ用）'),
-  }),
-  execute: async ({ context }) => {
+  outputSchema: recognizeShoupaiOutputSchema,
+  execute: async ({ context }): Promise<RecognizeShoupaiOutput> => {
     const LOG_PREFIX = '[recognize-shoupai]';
 
     const apiKey = process.env.GOOGLE_API_KEY ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY;
