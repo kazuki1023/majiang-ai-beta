@@ -21,9 +21,9 @@ export const analysisContextSchema = z.object({
   zhuangfeng: fengSchema.optional().describe('場風。0=東, 1=南, 2=西, 3=北'),
   menfeng: fengSchema.optional().describe('自風。0=東, 1=南, 2=西, 3=北'),
   baopai: z.array(z.string()).optional().describe('ドラ表示牌の配列（ドラ表示牌のまま。実際のドラは suanpai が変換）'),
-  hongpai: z.boolean().optional().describe('赤牌ありか'),
+  hongpai: z.boolean().optional().describe('赤牌ありか').default(true),
   xun: z.number().optional().describe('巡目'),
-  heinfo: z.string().nullable().optional().describe('捨て牌情報（オプション）'),
+  heinfo: z.string().nullable().optional().describe('捨て牌情報（オプション）').default(null),
   include_gang: z.boolean().optional().describe('槓候補も評価するか'),
   include_backtrack: z.boolean().optional().describe('バックトラック評価も含めるか'),
 });
