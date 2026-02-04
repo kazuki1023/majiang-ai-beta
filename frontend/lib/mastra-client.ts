@@ -90,6 +90,53 @@ export async function generateMajiangAnalysis(
   return data;
 }
 
+const IMAGE_RECOGNITION_AGENT = "imageRecognitionAgent";
+
+/**
+ * 画像認識（GCS URI から手牌文字列を取得）
+ * POST /api/agents/imageRecognitionAgent/generate
+ * @returns 認識した手牌文字列（例: m123p456s789z12）。AI の応答テキストから m...p...s...z... 形式を抽出する
+ */
+export async function generateImageRecognition(
+  gcsUri: string,
+  options?: { signal?: AbortSignal }
+): Promise<string> {
+  const baseUrl = getBaseUrl();
+  const res = await fetch(`${baseUrl}/api/agents/${IMAGE_RECOGNITION_AGENT}/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: [{ role: "user" as const, content: gcsUri }],
+    }),
+    signal: options?.signal,
+  });
+
+  const data = (await res.json()) as GenerateResponse;
+
+  if (!res.ok) {
+    const err = data?.error ?? { message: res.statusText };
+    throw new Error(
+      typeof err === "object" && err !== null && "message" in err
+        ? String((err as { message?: string }).message)
+        : String(err)
+    );
+  }
+
+  const text = data?.text ?? "";
+  const shoupai = extractShoupaiFromAgentText(text);
+  return shoupai;
+}
+
+/** AI の応答テキストから手牌文字列（m...p...s...z...）を抽出 */
+function extractShoupaiFromAgentText(text: string): string {
+  const trimmed = text.trim();
+  const oneLine = trimmed.split(/\s/)[0] ?? "";
+  if (/^[mpsz]\d+([mpsz]\d+)*$/i.test(oneLine)) return oneLine;
+  const match = trimmed.match(/[mpsz]\d+([mpsz]\d+)*/gi);
+  if (match?.[0]) return match[0];
+  return trimmed || text;
+}
+
 /**
  * 手牌分析（ストリーミング）
  * POST /api/agents/majiangAnalysisAgent/stream

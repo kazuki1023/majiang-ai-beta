@@ -69,7 +69,7 @@ export default function Home() {
               <Tab value={TAB_MANUAL}>手で入力</Tab>
             </TabList>
             <TabPanel value={TAB_IMAGE}>
-              <ImageUpload />
+              <ImageUpload onSubmit={handleSubmit} disabled={isLoading} />
             </TabPanel>
             <TabPanel value={TAB_MANUAL}>
               <ShoupaiInput onSubmit={handleSubmit} disabled={isLoading} />
