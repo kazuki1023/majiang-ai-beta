@@ -655,19 +655,19 @@ images:
 
 > 詳細な実装計画・タスク一覧・質問・懸念点は [docs/frontend-implementation-plan.md](./docs/frontend-implementation-plan.md) を参照
 
-- [ ] プロジェクト作成
-- [ ] 手牌入力UI
-- [ ] 画像アップロードUI（GCS連携）
-- [ ] API連携
-- [ ] Dockerfileの作成
-- [ ] Cloud Runへのデプロイ
+- [x] プロジェクト作成
+- [x] 手牌入力UI
+- [x] 画像アップロードUI（GCS連携）
+- [x] API連携
+- [x] Dockerfileの作成
+- [x] Cloud Runへのデプロイ
 
 ### Phase 4: 画像認識機能
 
-- [ ] imageRecognitionAgentの実装
-- [ ] Cloud Vision API連携
-- [ ] Gemini APIで整形
-- [ ] UIとの統合
+- [x] imageRecognitionAgentの実装（Gemini Vision で画像→手牌）
+- [ ] Cloud Vision API連携（精度検証後に必要なら追加）
+- [x] Gemini APIで整形（Gemini Vision で手牌文字列を取得）
+- [x] UIとの統合（認識ボタン・認識結果の手牌入力・分析実行）
 
 ### Phase 5: 本番運用
 

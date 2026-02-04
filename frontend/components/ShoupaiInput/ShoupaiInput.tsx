@@ -1,6 +1,6 @@
 "use client";
 
-import { selectedTilesToShoupaiString } from "@/lib/shoupai-utils";
+import { selectedTilesToShoupaiString, shoupaiStringToTileIds } from "@/lib/shoupai-utils";
 import { useState } from "react";
 import {
   MENFENG_LABELS,
@@ -17,6 +17,8 @@ export interface ShoupaiInputProps {
   onSubmit: (content: string) => void;
   /** 分析中は true。親がローディング状態を渡す */
   disabled?: boolean;
+  /** 初期手牌（例: 画像認識結果）。渡すとその牌で入力欄を初期化し、変更時は再同期する */
+  initialShoupaiString?: string;
 }
 
 function buildAnalysisMessage(
@@ -39,8 +41,14 @@ function buildAnalysisMessage(
   return parts.join("、");
 }
 
-export function ShoupaiInput({ onSubmit, disabled = false }: ShoupaiInputProps) {
-  const [selectedTiles, setSelectedTiles] = useState<string[]>([]);
+export function ShoupaiInput({
+  onSubmit,
+  disabled = false,
+  initialShoupaiString,
+}: ShoupaiInputProps) {
+  const [selectedTiles, setSelectedTiles] = useState<string[]>(() =>
+    initialShoupaiString ? shoupaiStringToTileIds(initialShoupaiString) : []
+  );
   const [zhuangfeng, setZhuangfeng] = useState(0);
   const [menfeng, setMenfeng] = useState(0);
   const [baopai, setBaopai] = useState<string[]>([]);

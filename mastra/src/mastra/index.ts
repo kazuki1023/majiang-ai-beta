@@ -1,6 +1,7 @@
 import { Mastra } from '@mastra/core/mastra';
 // import { LibSQLStore } from '@mastra/libsql';
 import { PinoLogger } from '@mastra/loggers';
+import { imageRecognitionAgent } from './agents/image-recognition-agent';
 import { majiangAnalysisAgent } from './agents/majiang-analysis-agent';
 import { weatherAgent } from './agents/weather-agent';
 import { completenessScorer, toolCallAppropriatenessScorer, translationScorer } from './scorers/weather-scorer';
@@ -14,7 +15,7 @@ const allowedOrigins = [
 
 export const mastra = new Mastra({
   workflows: { weatherWorkflow, evaluateShoupaiWorkflow },
-  agents: { weatherAgent, majiangAnalysisAgent },
+  agents: { weatherAgent, majiangAnalysisAgent, imageRecognitionAgent },
   scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
   server: {
     middleware: [

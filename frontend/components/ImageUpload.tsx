@@ -1,12 +1,23 @@
 "use client";
 
+import { ShoupaiInput } from "@/components/ShoupaiInput";
+import { generateImageRecognition } from "@/lib/mastra-client";
 import { useCallback, useEffect, useState } from "react";
 
-export function ImageUpload() {
+export interface ImageUploadProps {
+  /** 認識した手牌から分析を実行するときに呼ばれる（省略時は分析ボタンなし） */
+  onSubmit?: (content: string) => void;
+  /** 分析中は true（認識結果の ShoupaiInput を disabled にする） */
+  disabled?: boolean;
+}
+
+export function ImageUpload({ onSubmit, disabled = false }: ImageUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [gcsUri, setGcsUri] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRecognizing, setIsRecognizing] = useState(false);
+  const [recognizedShoupaiString, setRecognizedShoupaiString] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,6 +32,7 @@ export function ImageUpload() {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
       setGcsUri(null);
+      setRecognizedShoupaiString(null);
       setError(null);
       if (file) {
         if (!file.type.startsWith("image/")) {
@@ -60,8 +72,22 @@ export function ImageUpload() {
     }
   }, [selectedFile]);
 
+  const handleRecognize = useCallback(async () => {
+    if (!gcsUri) return;
+    setIsRecognizing(true);
+    setError(null);
+    try {
+      const shoupai = await generateImageRecognition(gcsUri);
+      setRecognizedShoupaiString(shoupai);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsRecognizing(false);
+    }
+  }, [gcsUri]);
+
   return (
-    <section className="space-y-3 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
+    <section className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
       <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
         画像アップロード
       </h2>
@@ -106,9 +132,28 @@ export function ImageUpload() {
         <div className="rounded border border-green-200 bg-green-50 p-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200">
           <p className="font-medium">アップロード完了</p>
           <p className="mt-1 break-all font-mono text-xs">{gcsUri}</p>
-          <p className="mt-2 text-xs opacity-80">
-            画像認識は Phase 4 で実装予定です。「認識」ボタンは準備中です。
+          <button
+            type="button"
+            onClick={handleRecognize}
+            disabled={isRecognizing}
+            className="mt-2 rounded border border-green-600 bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+          >
+            {isRecognizing ? "認識中..." : "認識"}
+          </button>
+        </div>
+      )}
+
+      {recognizedShoupaiString !== null && (
+        <div className="space-y-2 rounded border border-zinc-200 bg-zinc-50/50 p-3 dark:border-zinc-600 dark:bg-zinc-800/50">
+          <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+            認識結果（編集して分析できます）
           </p>
+          <ShoupaiInput
+            key={recognizedShoupaiString}
+            initialShoupaiString={recognizedShoupaiString}
+            onSubmit={onSubmit ?? (() => {})}
+            disabled={disabled}
+          />
         </div>
       )}
 

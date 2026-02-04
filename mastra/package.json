@@ -17,6 +17,8 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.18.0",
+    "@google/genai": "^1.39.0",
     "@kobalab/majiang-ai": "file:../submodules/majiang-ai",
     "@kobalab/majiang-analog": "file:../submodules/majiang-analog",
     "@kobalab/majiang-core": "file:../submodules/majiang-core",
