@@ -1,4 +1,6 @@
 "use client";
+
+import type { TileId } from "@/types";
 import Image from "next/image";
 
 /**
@@ -9,8 +11,8 @@ import Image from "next/image";
 export interface TileButtonProps {
   /** 表示する牌のラベル（例: 一萬, ②筒） */
   label: string;
-  /** 表示する牌のID（例: m1, p2, s3, z4） */
-  tileId: string;
+  /** 表示する牌のID（共通型 TileId。例: m1, p2, s3, z4） */
+  tileId: TileId;
   /** クリック時の処理 */
   onClick: () => void;
   disabled?: boolean;
@@ -20,7 +22,7 @@ export interface TileButtonProps {
 }
 
 const TILE_BUTTON_CLASS =
-  "flex items-center justify-center font-medium text-zinc-800 shadow-sm hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 h-7 w-4.5 mobile:h-8 mobile:w-5.5 min-w-4 sm:h-10 sm:w-7 sm:min-w-7";
+  "flex items-center justify-center font-medium text-zinc-800 shadow-sm hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 h-7 w-4.5 mobile:h-8 mobile:w-5.5 sm:h-10 sm:w-7";
 
 export function TileButton({
   label,
@@ -39,7 +41,7 @@ export function TileButton({
       title={title ?? label}
       aria-label={ariaLabel ?? label}
     >
-      <span className="relative block h-7 w-4.5 mobile:h-8 mobile:w-5.5 sm:h-10 sm:w-7">
+      <span className="relative block h-7 w-5 mobile:h-8 mobile:w-5 sm:h-10 sm:w-7">
         <Image
           src={`/pai/${tileId}.gif`}
           alt={label}

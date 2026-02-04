@@ -12,6 +12,8 @@
   --font-mono: var(--font-geist-mono);
   /* 350px 以上で牌サイズを切り替え（mobile:）、640px 以上で sm: */
   --breakpoint-mobile: 350px;
+  /* text-sm(14px)より小さいSP用。text-xs=12px、text-2xs=11px */
+  --text-2xs: 0.6875rem;
 }
 
 @media (prefers-color-scheme: dark) {

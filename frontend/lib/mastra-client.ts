@@ -1,13 +1,18 @@
+import type {
+  AnalysisStreamEvent,
+  ApiError,
+  RecognizeShoupaiOutput,
+} from "@/types";
 import { getBaseUrl } from "./url";
+
 /**
  * Mastra API クライアント（majiangAnalysisAgent 用）
  * - generate: 一括取得
  * - stream: ストリーミング（text-delta を逐次返す）
+ * ストリーミングで受け取るイベントは共通型 AnalysisStreamEvent に準拠する想定。
  */
 
 const AGENT_NAME = "majiangAnalysisAgent";
-
-
 
 // --- generate の型（Mastra 公式 Returns に準拠）---
 export interface GenerateResponse {
@@ -27,7 +32,7 @@ export interface GenerateMessage {
   content: string;
 }
 
-// --- stream イベントの型（Mastra の type + payload / agent-execution-event-text-delta のネスト対応）---
+/** ストリームで受信する生のイベント（Mastra の type + payload / agent-execution-event-text-delta のネスト対応）。共通型 AnalysisStreamEvent と併用。 */
 export interface StreamEvent {
   type: string;
   payload?: {
@@ -46,9 +51,57 @@ export interface StreamOptions {
   onTextDelta?: (delta: string) => void;
 }
 
-/** Mastra の text-delta / agent-execution-event-text-delta から表示用テキストを1つ取り出す */
+/** ストリームAPIの調査用ログ。デバッグ時のみ true にすること */
+const STREAM_DEBUG = false;
+const LOG_PREFIX = "[stream]";
+
+/** イベントの形だけを短く要約（content は長さのみ）。STREAM_DEBUG 時のみ使用 */
+function summarizeEvent(json: unknown): string {
+  if (json === null || typeof json !== "object") return String(json);
+  const o = json as Record<string, unknown>;
+  const keys = Object.keys(o).sort().join(",");
+  const type = "type" in o ? String(o.type) : "-";
+  const role = "role" in o ? String(o.role) : "-";
+  let contentInfo = "-";
+  if ("content" in o && typeof o.content === "string") contentInfo = `string(${o.content.length})`;
+  else if (o.payload && typeof o.payload === "object" && "textDelta" in o.payload) contentInfo = `payload.textDelta(${(o.payload as { textDelta?: string }).textDelta?.length ?? 0})`;
+  else if (o.payload && typeof o.payload === "object" && "delta" in o.payload) contentInfo = `payload.delta(${(o.payload as { delta?: string }).delta?.length ?? 0})`;
+  return `keys=[${keys}] type=${type} role=${role} content=${contentInfo}`;
+}
+
+/** オブジェクトの構造を再帰的に要約（文字列は長さのみ、深さ制限付き）。調査用 */
+function structureOf(obj: unknown, depth = 0, maxDepth = 3): string {
+  if (depth > maxDepth) return "...";
+  if (obj === null) return "null";
+  if (typeof obj !== "object") return typeof obj === "string" ? `string(${obj.length})` : String(obj);
+  const o = obj as Record<string, unknown>;
+  const entries = Object.keys(o)
+    .sort()
+    .map((k) => {
+      const v = o[k];
+      if (depth + 1 > maxDepth) return `${k}:?`;
+      if (typeof v === "string") return `${k}:string(${v.length})`;
+      if (v && typeof v === "object" && !Array.isArray(v)) return `${k}:{${structureOf(v, depth + 1, maxDepth)}}`;
+      if (Array.isArray(v)) return `${k}:[${v.length}]`;
+      return `${k}:${String(v)}`;
+    });
+  return entries.join(" ");
+}
+
+/** Mastra のイベントから表示用テキストを1つ取り出す（複数形式に対応） */
 function getTextDeltaFromEvent(json: StreamEvent | null): string {
-  if (!json?.payload) return "";
+  if (!json) return "";
+  // 形式: { "role": "assistant", "content": "..." }
+  const withContent = json as unknown as { role?: string; content?: string };
+  if (withContent.role === "assistant" && typeof withContent.content === "string") {
+    return withContent.content;
+  }
+  if (!json.payload) return "";
+  const payload = json.payload as Record<string, unknown>;
+  // 形式: payload.output.text（Mastra の run 完了イベントで本文が入る）
+  if (payload?.output && typeof payload.output === "object" && payload.output !== null && "text" in payload.output && typeof (payload.output as { text: unknown }).text === "string") {
+    return (payload.output as { text: string }).text;
+  }
   if (json.type === "text-delta") {
     const p = json.payload as { textDelta?: string; delta?: string };
     return (p.textDelta ?? p.delta ?? "") as string;
@@ -95,7 +148,7 @@ const IMAGE_RECOGNITION_AGENT = "imageRecognitionAgent";
 /**
  * 画像認識（GCS URI から手牌文字列を取得）
  * POST /api/agents/imageRecognitionAgent/generate
- * @returns 認識した手牌文字列（例: m123p456s789z12）。AI の応答テキストから m...p...s...z... 形式を抽出する
+ * @returns 認識した手牌文字列（共通型 ShoupaiString）。API が RecognizeShoupaiOutput を返す場合は error を throw する
  */
 export async function generateImageRecognition(
   gcsUri: string,
@@ -111,10 +164,10 @@ export async function generateImageRecognition(
     signal: options?.signal,
   });
 
-  const data = (await res.json()) as GenerateResponse;
+  const data = (await res.json()) as GenerateResponse | RecognizeShoupaiOutput;
 
   if (!res.ok) {
-    const err = data?.error ?? { message: res.statusText };
+    const err = (data as GenerateResponse)?.error ?? { message: res.statusText };
     throw new Error(
       typeof err === "object" && err !== null && "message" in err
         ? String((err as { message?: string }).message)
@@ -122,9 +175,18 @@ export async function generateImageRecognition(
     );
   }
 
-  const text = data?.text ?? "";
-  const shoupai = extractShoupaiFromAgentText(text);
-  return shoupai;
+  // 構造化レスポンス（RecognizeShoupaiOutput）の場合は error をチェック
+  const structured = data as RecognizeShoupaiOutput;
+  if ("error" in structured && structured.error) {
+    const apiErr = structured.error as ApiError;
+    throw new Error(apiErr.message ?? "画像認識に失敗しました");
+  }
+  if ("shoupaiString" in structured && typeof structured.shoupaiString === "string") {
+    return structured.shoupaiString;
+  }
+
+  const text = (data as GenerateResponse)?.text ?? "";
+  return extractShoupaiFromAgentText(text);
 }
 
 /** AI の応答テキストから手牌文字列（m...p...s...z...）を抽出 */
@@ -172,15 +234,36 @@ export async function streamMajiangAnalysis(
     throw new Error("No response body");
   }
 
+  if (STREAM_DEBUG) {
+    console.log(`${LOG_PREFIX} Content-Type: ${res.headers.get("content-type") ?? "(none)"}`);
+  }
+
   const decoder = new TextDecoder();
   let buffer = "";
+  let chunkIndex = 0;
+  let lineIndex = 0;
+  let totalWithDelta = 0;
+  const lastEvents: unknown[] = [];
+  const LAST_N = 3;
 
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        if (STREAM_DEBUG) {
+          console.log(`${LOG_PREFIX} stream done chunks=${chunkIndex} lines=${lineIndex} withText=${totalWithDelta}`);
+          for (let i = 0; i < lastEvents.length; i++) {
+            console.log(`${LOG_PREFIX} last#${lastEvents.length - i} structure: ${structureOf(lastEvents[i])}`);
+          }
+        }
+        break;
+      }
 
-      buffer += decoder.decode(value, { stream: true });
+      const decoded = decoder.decode(value, { stream: true });
+      buffer += decoded;
+      chunkIndex += 1;
+      let chunkWithDelta = 0;
+
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
 
@@ -188,47 +271,66 @@ export async function streamMajiangAnalysis(
         const trimmed = line.trim();
         if (!trimmed) continue;
 
-        let json: StreamEvent | null = null;
+        let json: StreamEvent | AnalysisStreamEvent | null = null;
         if (trimmed.startsWith("data:")) {
           const data = trimmed.slice(5).trim();
           if (data === "[DONE]" || data === "") continue;
           try {
-            json = JSON.parse(data) as StreamEvent;
+            json = JSON.parse(data) as StreamEvent | AnalysisStreamEvent;
           } catch {
+            if (STREAM_DEBUG) console.log(`${LOG_PREFIX} parse error (data:) len=${data.length} head=${data.slice(0, 60)}`);
             continue;
           }
         } else {
           try {
-            json = JSON.parse(trimmed) as StreamEvent;
+            json = JSON.parse(trimmed) as StreamEvent | AnalysisStreamEvent;
           } catch {
+            if (STREAM_DEBUG) console.log(`${LOG_PREFIX} parse error (raw) len=${trimmed.length} head=${trimmed.slice(0, 60)}`);
             continue;
           }
         }
 
-        const delta = getTextDeltaFromEvent(json);
+        lineIndex += 1;
+        if (STREAM_DEBUG && lineIndex <= 3) {
+          console.log(`${LOG_PREFIX} line#${lineIndex} structure: ${structureOf(json)}`);
+        }
+        lastEvents.push(json);
+        if (lastEvents.length > LAST_N) lastEvents.shift();
+        const delta = getTextDeltaFromEvent(json as StreamEvent);
+        if (delta) {
+          totalWithDelta += 1;
+          chunkWithDelta += 1;
+          if (STREAM_DEBUG) console.log(`${LOG_PREFIX} line#${lineIndex} TEXT ${summarizeEvent(json)} → delta.length=${delta.length}`);
+        }
         if (delta && options?.onTextDelta) options.onTextDelta(delta);
+      }
+
+      if (STREAM_DEBUG && chunkWithDelta > 0) {
+        console.log(`${LOG_PREFIX} chunk#${chunkIndex} decoded=${decoded.length} linesWithText=${chunkWithDelta}`);
       }
     }
 
     if (buffer.trim()) {
-      let json: StreamEvent | null = null;
+      let json: StreamEvent | AnalysisStreamEvent | null = null;
       if (buffer.startsWith("data:")) {
         const data = buffer.slice(5).trim();
         if (data && data !== "[DONE]") {
           try {
-            json = JSON.parse(data) as StreamEvent;
+            json = JSON.parse(data) as StreamEvent | AnalysisStreamEvent;
           } catch {
-            // ignore
+            if (STREAM_DEBUG) console.log(`${LOG_PREFIX} tail parse error (data:) len=${data.length}`);
           }
         }
       } else {
         try {
-          json = JSON.parse(buffer.trim()) as StreamEvent;
+          json = JSON.parse(buffer.trim()) as StreamEvent | AnalysisStreamEvent;
         } catch {
-          // ignore
+          if (STREAM_DEBUG) console.log(`${LOG_PREFIX} tail parse error (raw) len=${buffer.length}`);
         }
       }
-      const delta = getTextDeltaFromEvent(json);
+      if (STREAM_DEBUG && json) console.log(`${LOG_PREFIX} tail structure: ${structureOf(json)}`);
+      const delta = getTextDeltaFromEvent(json as StreamEvent);
+      if (STREAM_DEBUG && json) console.log(`${LOG_PREFIX} tail ${delta.length > 0 ? "TEXT " : ""}→ delta.length=${delta.length}`);
       if (delta && options?.onTextDelta) options.onTextDelta(delta);
     }
   } finally {

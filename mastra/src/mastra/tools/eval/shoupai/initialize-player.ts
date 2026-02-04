@@ -1,34 +1,18 @@
 /**
  * Player初期化ツール
- * Playerインスタンスの初期化と局情報の設定を行う
+ * 共通型 AnalysisContext に合わせる（docs/shared-types-design.md §4.2）。
  */
 
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
+import type { AnalysisContext } from '../../../types';
+import { fengSchema } from '../../../types';
 import { normalizePai } from './utils';
 
-// 型定義（後で実際の型に置き換える）
-type Player = any;
-type GameState = {
-  zhuangfeng: number;
-  menfeng: number;
-  baopai: string[];
-  hongpai: boolean;
-  xun: number;
-};
-
 /**
- * Player初期化関数（ツールからも直接呼び出しからも使える）
+ * Player初期化関数（共通型 AnalysisContext を受け取る）
  */
-export async function initializePlayer(params: {
-  shoupai: string;
-  zhuangfeng?: number;
-  menfeng?: number;
-  baopai?: string[];
-  hongpai?: boolean;
-  xun?: number;
-  heinfo?: string;
-}) {
+export async function initializePlayer(params: AnalysisContext) {
     try {
       // CommonJSモジュールのためrequireを使用
       const Majiang = require('@kobalab/majiang-core');
@@ -82,11 +66,12 @@ export async function initializePlayer(params: {
         player.kaigang({ baopai: baopai[i] });
       }
 
-    // 捨て牌情報の反映（heinfoがある場合）
-    if (params.heinfo) {
-      for (const suitstr of params.heinfo.match(/[mpsz][\d_*+=\-^]+/g) || []) {
+    // 捨て牌情報の反映（heinfo がある場合）
+    const heinfoStr = params.heinfo ?? undefined;
+    if (heinfoStr) {
+      for (const suitstr of heinfoStr.match(/[mpsz][\d_*+=\-^]+/g) || []) {
         const s = suitstr[0];
-        for (const n of suitstr.match(/\d/g) || []) {
+        for (const n of (suitstr.match(/\d/g) || [])) {
           player._suanpai.decrease(s + n);
         }
       }
@@ -119,8 +104,8 @@ export const initializePlayerTool = createTool({
   description: 'Playerインスタンスの初期化と局情報の設定',
   inputSchema: z.object({
     shoupai: z.string().describe('手牌文字列 (例: "m123p1234789s3388")'),
-    zhuangfeng: z.number().optional().describe('場風 (0-4)、0:東、1:南、2:西、3:北'),
-    menfeng: z.number().optional().describe('自風 (0-3)、0:東、1:南、2:西、3:北'),
+    zhuangfeng: fengSchema.optional().describe('場風 (0-3)、0:東、1:南、2:西、3:北'),
+    menfeng: fengSchema.optional().describe('自風 (0-3)、0:東、1:南、2:西、3:北'),
     baopai: z.array(z.string()).optional().describe('ドラ表示牌の配列（例: ["s3", "s4"]）。重要: これは「ドラ表示牌」であり「実際のドラ」ではない。ドラ表示牌"s3"の場合、実際のドラは"s4"になる。suanpaiが自動的に変換するため、ドラ表示牌をそのまま入力すること。'),
     hongpai: z.boolean().optional().describe('赤牌有無'),
     xun: z.number().optional().describe('巡目'),

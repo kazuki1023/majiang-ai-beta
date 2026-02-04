@@ -1,50 +1,37 @@
 /**
  * 手牌評価メインツール
- * 上記のツールを組み合わせて、完全な評価を実行
+ * 入力は共通型 AnalysisContext のみ。場風の変換やゆるい型の整形は行わない。
+ * 呼び出し元（API / Agent / Workflow）が共通型に揃えてから渡す（shared-types-design.md §6.1）。
  */
 
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
+import type { EvaluateShoupaiResult } from '../../../types';
+import { fengSchema } from '../../../types';
 import { calculatePaishu } from './calculate-paishu';
 import { evaluateBasic } from './evaluate-basic';
 import { evaluateDapaiCandidates } from './evaluate-dapai-candidates';
 import { initializePlayer } from './initialize-player';
 
+export type { AnalysisContext, EvaluateShoupaiResult } from '../../../types';
+
+/** 厳密な AnalysisContext の Zod スキーマ。ツールはこの形だけ受け付ける。 */
+export const analysisContextSchema = z.object({
+  shoupai: z.string().describe('手牌文字列 (例: "m123p1234789s3388")'),
+  zhuangfeng: fengSchema.optional().describe('場風。0=東, 1=南, 2=西, 3=北'),
+  menfeng: fengSchema.optional().describe('自風。0=東, 1=南, 2=西, 3=北'),
+  baopai: z.array(z.string()).optional().describe('ドラ表示牌の配列（ドラ表示牌のまま。実際のドラは suanpai が変換）'),
+  hongpai: z.boolean().optional().describe('赤牌ありか').default(true),
+  xun: z.number().optional().describe('巡目'),
+  heinfo: z.string().nullable().optional().describe('捨て牌情報（オプション）').default(null),
+  include_gang: z.boolean().optional().describe('槓候補も評価するか'),
+  include_backtrack: z.boolean().optional().describe('バックトラック評価も含めるか'),
+});
+
 export const evaluateShoupaiTool = createTool({
   id: 'evaluate-shoupai',
-  description: '手牌から最適な打牌を判断し、評価情報を返す',
-  inputSchema: z.object({
-    shoupai: z.string().describe('手牌文字列 (例: "m123p1234789s3388")'),
-    zhuangfeng: z.number().optional().describe('場風 (0-3)'),
-    menfeng: z.number().optional().describe('自風 (0-3)'),
-    baopai: z.union([z.array(z.string()), z.string()]).optional()
-      .transform((val) => {
-        if (typeof val === 'string') {
-          return val.split(',').filter(Boolean);
-        }
-        return val || [];
-      })
-      .describe('ドラ表示牌（文字列または配列。例: "s3" または ["s3", "s4"]）。重要: これは「ドラ表示牌」であり「実際のドラ」ではない。ドラ表示牌"s3"の場合、実際のドラは"s4"になる。suanpaiが自動的に変換するため、ドラ表示牌をそのまま入力すること。'),
-    hongpai: z.union([z.boolean(), z.number()]).optional()
-      .transform((val) => {
-        if (typeof val === 'number') {
-          return val !== 0;
-        }
-        return val ?? true;
-      })
-      .describe('赤牌有無（booleanまたは数値。0以外はtrue）'),
-    xun: z.number().optional().describe('巡目'),
-    heinfo: z.union([z.string(), z.object({})]).optional()
-      .transform((val) => {
-        if (typeof val === 'object' && val !== null && Object.keys(val).length === 0) {
-          return undefined;
-        }
-        return typeof val === 'string' ? val : undefined;
-      })
-      .describe('捨て牌情報（オプション）'),
-    include_gang: z.boolean().optional().describe('槓候補も評価するか'),
-    include_backtrack: z.boolean().optional().describe('バックトラック評価も含めるか'),
-  }),
+  description: '手牌から最適な打牌を判断し、評価情報を返す。入力は共通型（場風は0-3の数値、baopaiはstring配列）のみ。',
+  inputSchema: analysisContextSchema,
   outputSchema: z.object({
     current: z.object({
       n_xiangting: z.number().describe('現在のシャンテン数'),
@@ -60,7 +47,7 @@ export const evaluateShoupaiTool = createTool({
     })),
     recommended: z.string().describe('推奨打牌'),
   }),
-  execute: async ({ context }) => {
+  execute: async ({ context }): Promise<EvaluateShoupaiResult> => {
     // 1. Player初期化（関数として直接呼び出し）
     const { player } = await initializePlayer({
       shoupai: context.shoupai,
@@ -69,7 +56,7 @@ export const evaluateShoupaiTool = createTool({
       baopai: context.baopai,
       hongpai: context.hongpai,
       xun: context.xun,
-      heinfo: context.heinfo,
+      heinfo: context.heinfo ?? undefined,
     });
     
     // 2. 牌山の残り枚数を計算
@@ -77,7 +64,7 @@ export const evaluateShoupaiTool = createTool({
       player,
       xun: context.xun,
       menfeng: context.menfeng,
-      heinfo: context.heinfo,
+      heinfo: context.heinfo ?? undefined,
     });
     
     // 3. 基本評価（シャンテン数と評価値）
@@ -94,10 +81,8 @@ export const evaluateShoupaiTool = createTool({
       paishu,
       n_xiangting,
     });
-    console.log('candidates', candidates);
-    console.log('recommended', recommended);
-    
-    // 推奨打牌にselectedフラグを追加
+
+    // 推奨打牌に selected フラグを追加
     const dapaiCandidates = candidates.map((candidate) => ({
       ...candidate,
       selected: candidate.tile === recommended,

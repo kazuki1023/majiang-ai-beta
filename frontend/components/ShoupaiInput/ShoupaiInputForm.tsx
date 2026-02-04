@@ -2,6 +2,7 @@
 
 import { ShoupaiDisplay } from "@/components/ShoupaiDisplay";
 import { selectedTilesToShoupaiString, TILE_SET_BY_SUIT } from "@/lib/shoupai-utils";
+import type { Feng, TileId } from "@/types";
 import { BaopaiSelector } from "./BaopaiSelector";
 import { LabeledButtonGroup } from "./LabeledButtonGroup";
 import { TileButton } from "./TileButton";
@@ -9,26 +10,27 @@ import { TileButton } from "./TileButton";
 /**
  * Presentation: 手牌入力フォームの見た目だけを担当する。
  * 牌ボタンで選択 → 選択した牌が並んで見える形式。
+ * 場風・自風は共通型 Feng（0=東, 1=南, 2=西, 3=北）。
  */
 export const ZHUANGFENG_LABELS = ["東", "南", "西", "北"] as const;
 export const MENFENG_LABELS = ["東", "南", "西", "北"] as const;
 
 export interface ShoupaiInputFormProps {
   /** 選択した手牌（牌IDの配列、最大14枚） */
-  selectedTiles: string[];
-  /** 場風: その局の風（0=東, 1=南, 2=西, 3=北） */
-  zhuangfeng: number;
-  /** 自風: 自分の席の風（0=東, 1=南, 2=西, 3=北） */
-  menfeng: number;
+  selectedTiles: TileId[];
+  /** 場風（共通型 Feng） */
+  zhuangfeng: Feng;
+  /** 自風（共通型 Feng） */
+  menfeng: Feng;
   /** ドラ表示牌（牌IDの配列、順序は1枚目ドラ・2枚目カンドラ…） */
-  baopai: string[];
+  baopai: TileId[];
   /** 巡目（0〜18程度） */
   xun: number;
-  onAddTile: (tileId: string) => void;
+  onAddTile: (tileId: TileId) => void;
   onRemoveAt: (index: number) => void;
-  onZhuangfengChange: (value: number) => void;
-  onMenfengChange: (value: number) => void;
-  onBaopaiChange: (value: string[]) => void;
+  onZhuangfengChange: (value: Feng) => void;
+  onMenfengChange: (value: Feng) => void;
+  onBaopaiChange: (value: TileId[]) => void;
   onXunChange: (value: number) => void;
   onSubmit: (e: React.FormEvent) => void;
   disabled?: boolean;
@@ -37,11 +39,11 @@ export interface ShoupaiInputFormProps {
 const MAX_HAND = 14;
 const TILES_PER_TYPE = 4;
 
-function countInHand(selectedTiles: string[], tileId: string): number {
+function countInHand(selectedTiles: TileId[], tileId: TileId): number {
   return selectedTiles.filter((id) => id === tileId).length;
 }
 
-function canAddTile(selectedTiles: string[], tileId: string): boolean {
+function canAddTile(selectedTiles: TileId[], tileId: TileId): boolean {
   if (selectedTiles.length >= MAX_HAND) return false;
   return countInHand(selectedTiles, tileId) < TILES_PER_TYPE;
 }
@@ -72,18 +74,18 @@ export function ShoupaiInputForm({
           選択した手牌（{selectedTiles.length} /{MAX_HAND}）
         </label>
         <div
-          className="min-h-10 sm:min-h-12 rounded-md border border-zinc-300 bg-zinc-50/50 px-2 py-1.5 sm:px-3 sm:py-2"
+          className="min-h-10 sm:min-h-12 rounded-md border border-zinc-300 bg-zinc-50/50 px-1 py-1.5 sm:px-3 sm:py-2 h-8"
           aria-live="polite"
         >
           {selectedTiles.length === 0 ? (
-            <p className="text-sm text-zinc-500 h-9">牌を下から選んでください</p>
+            <p className="text-sm text-zinc-500">牌を下から選んでください</p>
           ) : (
-            <div className="text-sm text-zinc-500 h-9">
+            <div className="text-sm text-zinc-500">
               <ShoupaiDisplay
                 paistr={selectedTilesToShoupaiString(selectedTiles)}
                 onRemoveAt={onRemoveAt}
                 disabled={disabled}
-                className="mb-1"
+                className=""
               />
             </div>
           )}
@@ -126,8 +128,8 @@ export function ShoupaiInputForm({
             label="場風"
             labelId="zhuangfeng-label"
             options={ZHUANGFENG_LABELS}
-            value={zhuangfeng}
-            onChange={onZhuangfengChange}
+            value={zhuangfeng as number}
+            onChange={(i) => onZhuangfengChange(i as Feng)}
             disabled={disabled}
             ariaLabelPrefix="場風: "
           />
@@ -135,8 +137,8 @@ export function ShoupaiInputForm({
             label="自風"
             labelId="menfeng-label"
             options={MENFENG_LABELS}
-            value={menfeng}
-            onChange={onMenfengChange}
+            value={menfeng as number}
+            onChange={(i) => onMenfengChange(i as Feng)}
             disabled={disabled}
             ariaLabelPrefix="自風: "
           />
