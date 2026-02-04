@@ -1,8 +1,8 @@
 "use client";
 
-import type { TileId } from "@/types";
 import { ShoupaiDisplay } from "@/components/ShoupaiDisplay";
 import { TILE_SET_BY_SUIT } from "@/lib/shoupai-utils";
+import type { TileId } from "@/types";
 import { useRef } from "react";
 import { TileButton } from "./TileButton";
 
@@ -65,14 +65,14 @@ export function BaopaiSelector({
           }}
           aria-labelledby="baopai-label"
           aria-disabled={disabled}
-          className={`mt-0.5 flex min-h-9 w-full items-center rounded border border-zinc-300 bg-white px-2 py-1.5 text-left text-sm text-zinc-900 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100" ${
+          className={`mt-0.5 flex min-h-9 w-full min-w-0 items-center gap-1 rounded border border-zinc-300 bg-white px-2 py-1.5 text-left text-zinc-900 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 sm:text-sm ${
             disabled
               ? "cursor-not-allowed opacity-40"
               : "cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700"
           }`}
         >
           {baopai.length === 0 ? (
-            <span className="text-zinc-500 dark:text-zinc-400">
+            <span className="min-w-0 flex-1 truncate whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400 sm:text-xs md:text-sm">
               タップして選択
             </span>
           ) : (
@@ -80,10 +80,10 @@ export function BaopaiSelector({
               paistr={baopaiToPaistr(baopai)}
               onRemoveAt={undefined}
               disabled
-              className="pointer-events-none flex-1"
+              className="pointer-events-none min-w-0 flex-1"
             />
           )}
-          <span className="ml-1 text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="shrink-0 whitespace-nowrap text-2xs text-zinc-500 dark:text-zinc-400 sm:text-xs">
             {baopai.length}枚
           </span>
         </div>
