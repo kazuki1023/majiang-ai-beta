@@ -1,10 +1,10 @@
 "use client";
 
 import {
-    createContext,
-    useContext,
-    useId,
-    type ReactNode
+  createContext,
+  useContext,
+  useId,
+  type ReactNode
 } from "react";
 
 type TabsContextValue = {
@@ -125,7 +125,7 @@ export function TabPanel({ value, children, className }: TabPanelProps) {
       hidden={!isSelected}
       className={
         className ??
-        "rounded-b-lg border border-t-0 border-zinc-300 bg-white p-4 dark:border-zinc-600 dark:bg-zinc-800"
+        "rounded-b-lg border border-t-0 border-zinc-300 bg-white p-2 dark:border-zinc-600 dark:bg-zinc-800 md:p-4"
       }
     >
       {isSelected ? children : null}

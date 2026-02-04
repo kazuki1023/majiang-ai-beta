@@ -1,13 +1,18 @@
+import type {
+  AnalysisStreamEvent,
+  ApiError,
+  RecognizeShoupaiOutput,
+} from "@/types";
 import { getBaseUrl } from "./url";
+
 /**
  * Mastra API クライアント（majiangAnalysisAgent 用）
  * - generate: 一括取得
  * - stream: ストリーミング（text-delta を逐次返す）
+ * ストリーミングで受け取るイベントは共通型 AnalysisStreamEvent に準拠する想定。
  */
 
 const AGENT_NAME = "majiangAnalysisAgent";
-
-
 
 // --- generate の型（Mastra 公式 Returns に準拠）---
 export interface GenerateResponse {
@@ -27,7 +32,7 @@ export interface GenerateMessage {
   content: string;
 }
 
-// --- stream イベントの型（Mastra の type + payload / agent-execution-event-text-delta のネスト対応）---
+/** ストリームで受信する生のイベント（Mastra の type + payload / agent-execution-event-text-delta のネスト対応）。共通型 AnalysisStreamEvent と併用。 */
 export interface StreamEvent {
   type: string;
   payload?: {
@@ -95,7 +100,7 @@ const IMAGE_RECOGNITION_AGENT = "imageRecognitionAgent";
 /**
  * 画像認識（GCS URI から手牌文字列を取得）
  * POST /api/agents/imageRecognitionAgent/generate
- * @returns 認識した手牌文字列（例: m123p456s789z12）。AI の応答テキストから m...p...s...z... 形式を抽出する
+ * @returns 認識した手牌文字列（共通型 ShoupaiString）。API が RecognizeShoupaiOutput を返す場合は error を throw する
  */
 export async function generateImageRecognition(
   gcsUri: string,
@@ -111,10 +116,10 @@ export async function generateImageRecognition(
     signal: options?.signal,
   });
 
-  const data = (await res.json()) as GenerateResponse;
+  const data = (await res.json()) as GenerateResponse | RecognizeShoupaiOutput;
 
   if (!res.ok) {
-    const err = data?.error ?? { message: res.statusText };
+    const err = (data as GenerateResponse)?.error ?? { message: res.statusText };
     throw new Error(
       typeof err === "object" && err !== null && "message" in err
         ? String((err as { message?: string }).message)
@@ -122,9 +127,18 @@ export async function generateImageRecognition(
     );
   }
 
-  const text = data?.text ?? "";
-  const shoupai = extractShoupaiFromAgentText(text);
-  return shoupai;
+  // 構造化レスポンス（RecognizeShoupaiOutput）の場合は error をチェック
+  const structured = data as RecognizeShoupaiOutput;
+  if ("error" in structured && structured.error) {
+    const apiErr = structured.error as ApiError;
+    throw new Error(apiErr.message ?? "画像認識に失敗しました");
+  }
+  if ("shoupaiString" in structured && typeof structured.shoupaiString === "string") {
+    return structured.shoupaiString;
+  }
+
+  const text = (data as GenerateResponse)?.text ?? "";
+  return extractShoupaiFromAgentText(text);
 }
 
 /** AI の応答テキストから手牌文字列（m...p...s...z...）を抽出 */
@@ -188,47 +202,47 @@ export async function streamMajiangAnalysis(
         const trimmed = line.trim();
         if (!trimmed) continue;
 
-        let json: StreamEvent | null = null;
+        let json: StreamEvent | AnalysisStreamEvent | null = null;
         if (trimmed.startsWith("data:")) {
           const data = trimmed.slice(5).trim();
           if (data === "[DONE]" || data === "") continue;
           try {
-            json = JSON.parse(data) as StreamEvent;
+            json = JSON.parse(data) as StreamEvent | AnalysisStreamEvent;
           } catch {
             continue;
           }
         } else {
           try {
-            json = JSON.parse(trimmed) as StreamEvent;
+            json = JSON.parse(trimmed) as StreamEvent | AnalysisStreamEvent;
           } catch {
             continue;
           }
         }
 
-        const delta = getTextDeltaFromEvent(json);
+        const delta = getTextDeltaFromEvent(json as StreamEvent);
         if (delta && options?.onTextDelta) options.onTextDelta(delta);
       }
     }
 
     if (buffer.trim()) {
-      let json: StreamEvent | null = null;
+      let json: StreamEvent | AnalysisStreamEvent | null = null;
       if (buffer.startsWith("data:")) {
         const data = buffer.slice(5).trim();
         if (data && data !== "[DONE]") {
           try {
-            json = JSON.parse(data) as StreamEvent;
+            json = JSON.parse(data) as StreamEvent | AnalysisStreamEvent;
           } catch {
             // ignore
           }
         }
       } else {
         try {
-          json = JSON.parse(buffer.trim()) as StreamEvent;
+          json = JSON.parse(buffer.trim()) as StreamEvent | AnalysisStreamEvent;
         } catch {
           // ignore
         }
       }
-      const delta = getTextDeltaFromEvent(json);
+      const delta = getTextDeltaFromEvent(json as StreamEvent);
       if (delta && options?.onTextDelta) options.onTextDelta(delta);
     }
   } finally {

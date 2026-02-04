@@ -1,5 +1,6 @@
 "use client";
 
+import type { TileId } from "@/types";
 import { ShoupaiDisplay } from "@/components/ShoupaiDisplay";
 import { TILE_SET_BY_SUIT } from "@/lib/shoupai-utils";
 import { useRef } from "react";
@@ -9,14 +10,14 @@ import { TileButton } from "./TileButton";
  * ドラ表示牌の選択UI。クリックでモーダルを開き、モーダル内で牌を追加・削除する。
  */
 export interface BaopaiSelectorProps {
-  /** 選択中のドラ表示牌（牌IDの配列、順序は1枚目ドラ・2枚目カンドラ…） */
-  baopai: string[];
-  onBaopaiChange: (value: string[]) => void;
+  /** 選択中のドラ表示牌（共通型 TileId の配列、順序は1枚目ドラ・2枚目カンドラ…） */
+  baopai: TileId[];
+  onBaopaiChange: (value: TileId[]) => void;
   disabled?: boolean;
 }
 
 /** 牌ID配列をその順序で手牌文字列に変換（ドラの並びを保持） */
-function baopaiToPaistr(baopai: string[]): string {
+function baopaiToPaistr(baopai: TileId[]): string {
   return baopai.join("");
 }
 
@@ -35,7 +36,7 @@ export function BaopaiSelector({
     dialogRef.current?.close();
   };
 
-  const handleAddTile = (tileId: string) => {
+  const handleAddTile = (tileId: TileId) => {
     onBaopaiChange([...baopai, tileId]);
   };
 

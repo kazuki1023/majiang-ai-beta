@@ -1,5 +1,6 @@
 "use client";
 
+import type { Feng, ShoupaiString, TileId } from "@/types";
 import { selectedTilesToShoupaiString, shoupaiStringToTileIds } from "@/lib/shoupai-utils";
 import { useState } from "react";
 import {
@@ -18,14 +19,14 @@ export interface ShoupaiInputProps {
   /** 分析中は true。親がローディング状態を渡す */
   disabled?: boolean;
   /** 初期手牌（例: 画像認識結果）。渡すとその牌で入力欄を初期化し、変更時は再同期する */
-  initialShoupaiString?: string;
+  initialShoupaiString?: ShoupaiString;
 }
 
 function buildAnalysisMessage(
   shoupai: string,
-  zhuangfeng: number,
-  menfeng: number,
-  baopai: string[],
+  zhuangfeng: Feng,
+  menfeng: Feng,
+  baopai: TileId[],
   xun: number
 ): string {
   if (!shoupai) return "";
@@ -46,15 +47,15 @@ export function ShoupaiInput({
   disabled = false,
   initialShoupaiString,
 }: ShoupaiInputProps) {
-  const [selectedTiles, setSelectedTiles] = useState<string[]>(() =>
+  const [selectedTiles, setSelectedTiles] = useState<TileId[]>(() =>
     initialShoupaiString ? shoupaiStringToTileIds(initialShoupaiString) : []
   );
-  const [zhuangfeng, setZhuangfeng] = useState(0);
-  const [menfeng, setMenfeng] = useState(0);
-  const [baopai, setBaopai] = useState<string[]>([]);
+  const [zhuangfeng, setZhuangfeng] = useState<Feng>(0);
+  const [menfeng, setMenfeng] = useState<Feng>(0);
+  const [baopai, setBaopai] = useState<TileId[]>([]);
   const [xun, setXun] = useState(7);
 
-  const handleAddTile = (tileId: string) => {
+  const handleAddTile = (tileId: TileId) => {
     setSelectedTiles((prev) => [...prev, tileId]);
   };
 
