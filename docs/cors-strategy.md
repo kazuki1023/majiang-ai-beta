@@ -246,7 +246,7 @@ flowchart LR
 ## 次のステップ（選択肢 C 採用時）
 
 - [x] CORS戦略を決定 → **選択肢C（Next.js API Routes でプロキシ）**
-- [x] Next.js に Mastra 用プロキシ API Route を追加（`/api/agents/[...path]/route.ts`。generate と stream を body パイプで中継）
-- [x] フロントの `getBaseUrl()` を `""` にし、同一オリジン（`/api/agents/...`）呼び出しに変更
+- [x] Next.js に Mastra 用プロキシ API Route を追加（`/api/chat`：チャット、`/api/generate/[...path]`：generate。body パイプで中継）
+- [x] フロントの `getBaseUrl()` を `""` にし、同一オリジン（`/api/chat`、`/api/generate/...`）呼び出しに変更
 - [x] 環境変数 `MASTRA_API_URL`（サーバー専用）を Next.js に設定（.env.local / Secret Manager）
 - [ ] ローカルで Next + Mastra を起動し、ストリーミング（ReadableStream 中継）の動作確認

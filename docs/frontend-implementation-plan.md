@@ -21,7 +21,7 @@ Mastra API の Cloud Run 移行完了を前提に、Next.js フロントエン�
 ### フェーズ 0: 事前対応（フロント実装より先に実施推奨）
 
 - [x] **0.1 Next.js に Mastra 用プロキシ API Route を追加**（[cors-strategy.md](./cors-strategy.md) 選択肢 C）
-  - [x] 0.1.1 `/api/agents/[...path]` 等の API Route を追加し、`MASTRA_API_URL` へ中継する
+  - [x] 0.1.1 チャット用 `/api/chat` と generate 用 `/api/generate/[...path]` の API Route を追加し、`MASTRA_URL` / `MASTRA_API_URL` へ中継する
   - [x] 0.1.2 `generate` 用（POST → JSON 返却）と `stream` 用（POST → ReadableStream 中継）の両方に対応する
   - [x] 0.1.3 環境変数 `MASTRA_API_URL`（サーバー専用）を読み、未設定時は 503 でエラーメッセージを返す
   - [ ] 0.1.4 ローカルで Next と Mastra を起動し、同一オリジン（`/api/...`）経由で Mastra に届くことを確認する
@@ -33,7 +33,7 @@ Mastra API の Cloud Run 移行完了を前提に、Next.js フロントエン�
   - [ ] 0.2.3 ローカル開発用に `.env` や `mastra/.env` に `FRONTEND_URL=http://localhost:3000` を設定する（任意）
 
 - [ ] **0.3 Mastra API のレスポンス形式確認**
-  - [ ] 0.3.1 `POST /api/agents/majiangAnalysisAgent/generate` を curl で 1 回叩く（手牌を content に含めた messages を送る）
+  - [ ] 0.3.1 `POST /api/generate/majiangAnalysisAgent/generate` を curl で 1 回叩く（手牌を content に含めた messages を送る）
   - [ ] 0.3.2 返却 JSON をファイルに保存する（例: `docs/sample-mastra-generate-response.json`）
   - [ ] 0.3.3 レスポンスのキー構造をメモする（`output` / `text` / `messages` 等、AI の応答テキストがどのキーに入っているか）
   - [ ] 0.3.4 フロント用の型定義とパース方針をメモする（後で `lib/mastra-client.ts` と `AnalysisResult` に反映）
@@ -78,9 +78,9 @@ Mastra API の Cloud Run 移行完了を前提に、Next.js フロントエン�
 
 - [x] **2.1 Mastra クライアント**（設計変更: 同一オリジン呼び出しに更新）
   - [x] 2.1.1 `lib/mastra-client.ts` を新規作成する
-  - [x] 2.1.2 **同一オリジン**の Next.js API Route を呼ぶように変更する。`getBaseUrl()` を `""` にし、`/api/agents/majiangAnalysisAgent/generate` 等を相対パスで叩く（サーバー側で `MASTRA_API_URL` を使用してプロキシ）
-  - [x] 2.1.3 `POST /api/agents/majiangAnalysisAgent/generate` を呼ぶ `generateMajiangAnalysis` を実装する（非ストリーミング用）
-  - [x] 2.1.4 `POST /api/agents/majiangAnalysisAgent/stream` を呼ぶ `streamMajiangAnalysis` を実装する。fetch + ReadableStream でチャンクをパースし、`text-delta` を `onTextDelta` コールバックで返す。SSE（`data:`）と NDJSON の両方に対応
+  - [x] 2.1.2 **同一オリジン**の Next.js API Route を呼ぶように変更する。`getBaseUrl()` を `""` にし、`/api/generate/...` および `/api/chat` を相対パスで叩く（サーバー側で `MASTRA_URL` / `MASTRA_API_URL` を使用してプロキシ）
+  - [x] 2.1.3 `POST /api/generate/majiangAnalysisAgent/generate` を呼ぶ `generateMajiangAnalysis` を実装する（一括取得用）
+  - [x] 2.1.4 チャット・ストリーミングは AI SDK の `useChat` + `POST /api/chat`（Mastra chatRoute）で実装する
   - [x] 2.1.5 リクエスト body を `{ messages: [{ role: 'user', content: string }] }` の形にする
   - [x] 2.1.6 `GenerateResponse` / `StreamEvent` / `StreamOptions` を TypeScript で定義する。`AbortSignal` で中断可能
 
@@ -92,7 +92,7 @@ Mastra API の Cloud Run 移行完了を前提に、Next.js フロントエン�
   - [x] 2.2.5 ラベル・説明（m=萬子等）を付ける。牌描画は 3.5 の ShoupaiDisplay で行い、本コンポーネントでは呼ばない
 
 - [x] **2.3 分析実行とローディング**
-  - [x] 2.3.1 送信ボタン押下時に `streamMajiangAnalysis` を呼ぶ（`app/page.tsx` の handleSubmit）
+  - [x] 2.3.1 送信ボタン押下時に `useChat` の `sendMessage` を呼ぶ（`app/page.tsx` の handleSubmit）
   - [x] 2.3.2 ローディング状態（useState）を用意し、送信開始で true、完了で false。ストリーミング中は「表示中...」表示
   - [x] 2.3.3 ローディング中は ShoupaiInput に disabled を渡し、ボタンは「分析中...」表示
   - [x] 2.3.4 AbortController でキャンセル可能。「キャンセル」ボタンで stream を中断
@@ -258,7 +258,7 @@ frontend/
 ### 1. Mastra API のレスポンス形式
 
 - **参照**: 公式の戻り値（Returns）は [docs/mastra/agents/generate.md](./mastra/agents/generate.md) に記載。`text`（生成テキスト）、`object`（構造化出力）、`toolCalls`、`toolResults`、`usage`、`steps`、`finishReason`、`response`（`messages` 等）、`error` などの形で返る。
-- **REST API**: `POST /api/agents/{agentName}/generate` の HTTP レスポンスは、上記 Returns を JSON 化した形（またはその一部）と想定。`lib/mastra-client.ts` の型と `AnalysisResult` のパースはこの形に合わせる。必要ならフェーズ 0 で 1 回 curl で叩き、実際のキー名を確認する。
+- **REST API**: `POST /api/generate/{agentName}/generate` の HTTP レスポンスは、上記 Returns を JSON 化した形（またはその一部）と想定。`lib/mastra-client.ts` の型と `AnalysisResult` のパースはこの形に合わせる。必要ならフェーズ 0 で 1 回 curl で叩き、実際のキー名を確認する。
 
 ### 2. majiang-ui の参照方法（議論用・メリデリ）
 
@@ -305,10 +305,10 @@ frontend/
 
 - **方針変更**: ブラウザは Mastra API を直接叩かず、Next.js の API Route（プロキシ）経由で叩く（[cors-strategy.md](./cors-strategy.md) 選択肢 C）。同一オリジンのため **CORS 不要**。フェーズ 0 では Next.js にプロキシ API Route を追加する。
 
-### 5. ストリーミング（/stream）
+### 5. ストリーミング（チャット）
 
 - **決定**: **ストリーミング対応する**。写真アップロードや手牌分析の応答を逐次表示した方が UX が良く、違和感が少ない。
-- **実装方針**: [docs/streaming-implementation.md](./streaming-implementation.md) に記載。Mastra の `POST /api/agents/{agentName}/stream` を fetch + ReadableStream で消費し、`text-delta` を逐次表示する。
+- **実装方針**: AI SDK の `useChat` + `DefaultChatTransport({ api: "/api/chat" })` で Mastra の `chatRoute`（POST /chat）に接続。ストリーミングは useChat が処理する。
 
 ### 6. エラーレスポンスの形式
 
