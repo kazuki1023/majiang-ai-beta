@@ -34,7 +34,7 @@ export function ShoupaiDisplay({
 
   return (
     <div className={className}>
-      <ul className="flex flex-wrap gap-0.25 sm:gap-1.5" aria-label="手牌">
+      <ul className="flex flex-wrap md:gap-1.5" aria-label="手牌">
         {tileIds.map((tileId, index) => (
           <li key={`${tileId}-${index}`}>
             <TileButton

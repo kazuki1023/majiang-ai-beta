@@ -74,7 +74,7 @@ export function ShoupaiInputForm({
           選択した手牌（{selectedTiles.length} /{MAX_HAND}）
         </label>
         <div
-          className="min-h-10 sm:min-h-12 rounded-md border border-zinc-300 bg-zinc-50/50 px-1 py-1.5 sm:px-3 sm:py-2 h-8"
+          className="min-h-10 sm:min-h-12 rounded-md border border-zinc-300 bg-zinc-50/50 px-1 py-1.5 md:px-3 md:py-2 h-8 flex items-center justify-start"
           aria-live="polite"
         >
           {selectedTiles.length === 0 ? (

@@ -22,7 +22,7 @@ export interface TileButtonProps {
 }
 
 const TILE_BUTTON_CLASS =
-  "flex items-center justify-center font-medium text-zinc-800 shadow-sm hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 h-7 w-4.5 mobile:h-8 mobile:w-5.5 sm:h-10 sm:w-7";
+  "flex items-center justify-center font-medium text-zinc-800 shadow-sm hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 h-7 w-4.5 mobile:h-8 mobile:w-5 md:h-10 md:w-7";
 
 export function TileButton({
   label,

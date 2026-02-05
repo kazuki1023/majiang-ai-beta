@@ -138,14 +138,11 @@ export function ImageUpload({ onSubmit, disabled = false }: ImageUploadProps) {
     phase === "uploading" ? "uploading" : phase === "recognizing" ? "recognizing" : null;
 
   return (
-    <section className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
-      <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        画像から手牌を読み取る
-      </h2>
+    <section className="space-y-4 rounded-lg bg-white md:p-4 dark:border-zinc-700 dark:bg-zinc-800">
 
       <label className="block cursor-pointer">
         <span className="inline-block rounded border border-zinc-300 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700">
-          写真を選択
+          {previewUrl ? "写真を再選択" : "写真を選択"}
         </span>
         <input
           type="file"
@@ -179,9 +176,9 @@ export function ImageUpload({ onSubmit, disabled = false }: ImageUploadProps) {
       )}
 
       {recognizedShoupaiString !== null && phase === "recognized" && (
-        <div className="space-y-2 rounded border border-zinc-200 bg-zinc-50/50 p-3 dark:border-zinc-600 dark:bg-zinc-800/50">
+        <div className="space-y-2 rounded p-1 md:p-2 dark:border-zinc-600 dark:bg-zinc-800/50">
           <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            認識結果（必要なら編集してから分析）
+            間違いがあれば牌をタップして修正し、下の「最適な打牌を分析する」を押してください。
           </p>
           <ShoupaiInput
             key={recognizedShoupaiString}
