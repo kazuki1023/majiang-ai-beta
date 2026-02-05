@@ -14,7 +14,7 @@ import {
   ZHUANGFENG_LABELS,
 } from "@/types";
 import { BaopaiSelector } from "./BaopaiSelector";
-import { LabeledButtonGroup } from "./LabeledButtonGroup";
+import { FengButtonGroup } from "./FengButtonGroup";
 
 /**
  * Presentation: 手牌入力フォームの見た目だけを担当する。
@@ -168,7 +168,7 @@ export function ShoupaiInputForm({
               </div>
             </div>
             <div className="mt-1 md:mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <LabeledButtonGroup
+              <FengButtonGroup
                 label="場風"
                 labelId="zhuangfeng-label"
                 options={ZHUANGFENG_LABELS}
@@ -177,7 +177,7 @@ export function ShoupaiInputForm({
                 disabled={disabled}
                 ariaLabelPrefix="場風: "
               />
-              <LabeledButtonGroup
+              <FengButtonGroup
                 label="自風"
                 labelId="menfeng-label"
                 options={MENFENG_LABELS}

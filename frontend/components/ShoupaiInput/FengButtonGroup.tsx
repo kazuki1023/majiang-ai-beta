@@ -1,17 +1,18 @@
 "use client";
 
 import type { Feng } from "@/types";
+
 /**
- * ラベル付きの選択ボタン群（場風・自風などで共通利用）
+ * 場風・自風用の選択ボタン群（Feng: 0=東, 1=南, 2=西, 3=北）。
  */
-export interface LabeledButtonGroupProps {
+export interface FengButtonGroupProps {
   /** グループのラベル（例: 場風, 自風） */
   label: string;
   /** アクセシビリティ用の id（aria-labelledby で参照） */
   labelId: string;
-  /** 各ボタンの表示ラベル */
+  /** 各ボタンの表示ラベル（東・南・西・北の順） */
   options: readonly string[];
-  /** 選択中のインデックス（0-based） */
+  /** 選択中の値（Feng） */
   value: Feng;
   onChange: (index: number) => void;
   disabled?: boolean;
@@ -26,7 +27,7 @@ const BUTTON_SELECTED =
 const BUTTON_UNSELECTED =
   "bg-white text-zinc-800 hover:bg-zinc-100 disabled:bg-zinc-100 dark:bg-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-500";
 
-export function LabeledButtonGroup({
+export function FengButtonGroup({
   label,
   labelId,
   options,
@@ -34,7 +35,7 @@ export function LabeledButtonGroup({
   onChange,
   disabled = false,
   ariaLabelPrefix = "",
-}: LabeledButtonGroupProps) {
+}: FengButtonGroupProps) {
   return (
     <div role="group" aria-labelledby={labelId}>
       <span
