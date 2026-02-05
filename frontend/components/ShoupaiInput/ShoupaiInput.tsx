@@ -33,12 +33,10 @@ function buildAnalysisMessage(
   if (!shoupai) return "";
 
   const parts: string[] = [`手牌: ${shoupai}`];
-  if (zhuangfeng !== 0 || menfeng !== 0 || baopai.length > 0 ) {
-    parts.push(`場風: ${ZHUANGFENG_LABELS[zhuangfeng]}`);
-    parts.push(`自風: ${MENFENG_LABELS[menfeng]}`);
-    if (baopai.length > 0) parts.push(`ドラ表示牌: ${baopai.join(",")}`);
-    parts.push(`巡目: ${xun}`);
-  }
+  parts.push(`場風: ${ZHUANGFENG_LABELS[zhuangfeng]}`);
+  parts.push(`自風: ${MENFENG_LABELS[menfeng]}`);
+  if (baopai.length > 0) parts.push(`ドラ表示牌: ${baopai.join(",")}`);
+  parts.push(`巡目: ${xun}`);
   parts.push("の最適な打牌を教えてください");
   return parts.join("、");
 }

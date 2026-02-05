@@ -1,5 +1,6 @@
 "use client";
 
+import type { Feng } from "@/types";
 /**
  * ラベル付きの選択ボタン群（場風・自風などで共通利用）
  */
@@ -11,11 +12,13 @@ export interface LabeledButtonGroupProps {
   /** 各ボタンの表示ラベル */
   options: readonly string[];
   /** 選択中のインデックス（0-based） */
-  value: number;
+  value: Feng;
   onChange: (index: number) => void;
   disabled?: boolean;
   /** 各ボタンの aria-label の接頭辞（例: "場風: "） */
   ariaLabelPrefix?: string;
+  /** デフォルトの選択値 */
+  defaultValue?: Feng;
 }
 
 const BUTTON_BASE =
@@ -33,6 +36,7 @@ export function LabeledButtonGroup({
   onChange,
   disabled = false,
   ariaLabelPrefix = "",
+  defaultValue = 0,
 }: LabeledButtonGroupProps) {
   return (
     <div role="group" aria-labelledby={labelId}>
@@ -52,6 +56,7 @@ export function LabeledButtonGroup({
             className={`${BUTTON_BASE} ${value === i ? BUTTON_SELECTED : BUTTON_UNSELECTED}`}
             aria-pressed={value === i}
             aria-label={ariaLabelPrefix + optionLabel}
+            defaultValue={defaultValue}
           >
             {optionLabel}
           </button>
