@@ -13,8 +13,8 @@ import {
   XUN_MIN,
   ZHUANGFENG_LABELS,
 } from "@/types";
-import { BaopaiSelector } from "./BaopaiSelector";
-import { FengButtonGroup } from "./FengButtonGroup";
+import { BaopaiSelector } from "@/components/shoupai/BaopaiSelector";
+import { FengButtonGroup } from "@/components/shoupai/FengButtonGroup";
 
 /**
  * Presentation: 手牌入力フォームの見た目だけを担当する。

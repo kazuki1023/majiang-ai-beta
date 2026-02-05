@@ -1,6 +1,5 @@
 /**
- * 分析エラー表示（共有コンポーネント）。
- * hooks・イベントを使わないため "use client" 不要。Client からも Server からも利用可能。
+ * 分析エラー表示。hooks・イベントを使わないため "use client" 不要。
  */
 export interface ChatErrorAlertProps {
   error: Error;

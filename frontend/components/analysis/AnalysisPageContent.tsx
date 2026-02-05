@@ -3,17 +3,17 @@
 import { AnalysisResult } from "@/components/AnalysisResult";
 import { ImageUpload } from "@/components/ImageUpload";
 import { ShoupaiInput } from "@/components/ShoupaiInput";
-import { Tab, TabList, TabPanel, Tabs } from "@/components/Tabs";
+import { Tab, TabList, TabPanel, Tabs } from "@/components/ui/Tabs";
 import { useState } from "react";
+import { useAnalysisChat } from "@/hooks/use-analysis-chat";
 import { ChatErrorAlert } from "./ChatErrorAlert";
 import { ChatStatusBar } from "./ChatStatusBar";
-import { useAnalysisChat } from "@/hooks/use-analysis-chat";
 
 const TAB_IMAGE = "image";
 const TAB_MANUAL = "manual";
 
-/** 手牌分析の入力・結果ブロック（Client Component）。レイアウト（main 等）は page が担当する。 */
-export function AnalysisPageClient() {
+/** 手牌分析の入力・結果ブロック（Client）。hooks はここで呼び、レイアウトは page が担当。 */
+export function AnalysisPageContent() {
   const [activeTab, setActiveTab] = useState(TAB_IMAGE);
   const { chatState, resultText, error, handleSubmit, handleCancel } =
     useAnalysisChat();

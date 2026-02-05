@@ -2,9 +2,9 @@
 
 import { ShoupaiDisplay } from "@/components/ShoupaiDisplay";
 import { TileButton } from "@/components/shoupai/TileButton";
+import { Dialog } from "@/components/ui/Dialog";
 import { TILE_SET_BY_SUIT } from "@/lib/shoupai-utils";
 import type { TileId } from "@/types";
-import { Dialog } from "@/components/ui/Dialog";
 
 export interface BaopaiDialogProps {
   open: boolean;

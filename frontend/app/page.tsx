@@ -1,4 +1,4 @@
-import { AnalysisPageClient } from "@/features/analysis";
+import { AnalysisPage } from "@/features/analysis";
 
 export default function Home() {
   return (
@@ -7,7 +7,7 @@ export default function Home() {
         <h1 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100 mb-0 md:mb-4">
           手牌分析
         </h1>
-        <AnalysisPageClient />
+        <AnalysisPage />
       </main>
     </div>
   );
