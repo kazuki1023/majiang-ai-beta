@@ -73,7 +73,7 @@ export default function Home() {
         {isLoading && (
           <section className="flex items-center gap-2">
             <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              表示中...
+              分析中...
             </span>
             <button
               type="button"
