@@ -30,7 +30,6 @@ export function ImageUpload({ onSubmit, disabled = false }: ImageUploadProps) {
   const runIdRef = useRef(0);
 
   const applyNewFile = useCallback((file: File) => {
-    runIdRef.current += 1;
     setPreviewUrl(null);
     setGcsUri(null);
     setRecognizedShoupaiString(null);
