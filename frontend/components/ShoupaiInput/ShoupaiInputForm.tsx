@@ -89,9 +89,9 @@ export function ShoupaiInputForm({
           aria-live="polite"
         >
           {selectedTiles.length === 0 ? (
-            <p className="text-sm text-zinc-500">牌を下から選んでください</p>
+            <p className="text-sm text-zinc-500 w-full">牌を下から選んでください</p>
           ) : (
-            <div className="text-sm text-zinc-500">
+            <div className="text-sm text-zinc-500 w-full">
               <ShoupaiDisplay
                 paistr={selectedTilesToShoupaiString(selectedTiles)}
                 onRemoveAt={onRemoveAt}
@@ -110,23 +110,25 @@ export function ShoupaiInputForm({
         </label>
         <div className="space-y-1.5 sm:space-y-2">
           {TILE_SET_BY_SUIT.map(({ suitLabel, tiles }) => (
-            <div key={suitLabel} className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+            <div key={suitLabel} className="flex w-full items-center gap-1 sm:gap-1.5">
               <span className="w-6 shrink-0 text-[10px] font-medium text-zinc-500 sm:w-8 sm:text-xs">
                 {suitLabel}
               </span>
-              <div className="flex flex-wrap gap-0.5 sm:gap-1">
+              <div className="flex min-w-0 flex-1 flex-wrap gap-0.5 sm:gap-1">
                 {tiles.map((tile) => {
                   const addable = canAddTile(selectedTiles, tile.id);
                   return (
-                    <TileButton
-                      key={tile.id}
-                      tileId={tile.id}
-                      label={tile.label}
-                      onClick={() => addable && onAddTile(tile.id)}
-                      disabled={disabled || !addable}
-                      title={tile.label}
-                      ariaLabel={tile.label}
-                    />
+                    <span key={tile.id} className="min-w-0 flex-1 basis-0">
+                      <TileButton
+                        tileId={tile.id}
+                        label={tile.label}
+                        onClick={() => addable && onAddTile(tile.id)}
+                        disabled={disabled || !addable}
+                        title={tile.label}
+                        ariaLabel={tile.label}
+                        className="aspect-9/14 w-full max-w-9 sm:max-w-10"
+                      />
+                    </span>
                   );
                 })}
               </div>

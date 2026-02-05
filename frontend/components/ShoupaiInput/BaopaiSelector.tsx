@@ -129,22 +129,24 @@ export function BaopaiSelector({
             {TILE_SET_BY_SUIT.map(({ suitLabel, tiles }) => (
               <div
                 key={suitLabel}
-                className="flex flex-wrap items-center gap-1 sm:gap-1.5"
+                className="flex w-full items-center gap-1 sm:gap-1.5"
               >
                 <span className="w-6 shrink-0 text-[10px] font-medium text-zinc-500 sm:w-8 sm:text-xs dark:text-zinc-400">
                   {suitLabel}
                 </span>
-                <div className="flex flex-wrap gap-0.5 sm:gap-1">
+                <div className="flex min-w-0 flex-1 flex-wrap gap-0.5 sm:gap-1">
                   {tiles.map((tile) => (
-                    <TileButton
-                      key={tile.id}
-                      tileId={tile.id}
-                      label={tile.label}
-                      onClick={() => handleAddTile(tile.id)}
-                      disabled={false}
-                      title={tile.label}
-                      ariaLabel={tile.label}
-                    />
+                    <span key={tile.id} className="min-w-0 flex-1 basis-0">
+                      <TileButton
+                        tileId={tile.id}
+                        label={tile.label}
+                        onClick={() => handleAddTile(tile.id)}
+                        disabled={false}
+                        title={tile.label}
+                        ariaLabel={tile.label}
+                        className="aspect-9/14 w-full max-w-9 sm:max-w-10"
+                      />
+                    </span>
                   ))}
                 </div>
               </div>
