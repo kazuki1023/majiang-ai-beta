@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChatUIState } from "./types";
+import type { ChatUIState } from "@/types";
 
 export interface ChatStatusBarProps {
   chatState: ChatUIState;

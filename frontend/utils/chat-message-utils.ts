@@ -1,5 +1,5 @@
 import { isTextUIPart, type UIMessage } from "ai";
-import type { ChatUIState } from "./types";
+import type { ChatUIState } from "@/types";
 
 /** useChat の status を UI 用の ChatUIState に変換する */
 export function toChatUIState(status: string): ChatUIState {

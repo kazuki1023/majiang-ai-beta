@@ -7,7 +7,7 @@ import { Tab, TabList, TabPanel, Tabs } from "@/components/Tabs";
 import { useState } from "react";
 import { ChatErrorAlert } from "./ChatErrorAlert";
 import { ChatStatusBar } from "./ChatStatusBar";
-import { useAnalysisChat } from "./use-analysis-chat";
+import { useAnalysisChat } from "@/hooks/use-analysis-chat";
 
 const TAB_IMAGE = "image";
 const TAB_MANUAL = "manual";

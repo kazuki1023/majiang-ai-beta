@@ -14,6 +14,7 @@ export {
   XUN_MIN,
   ZHUANGFENG_LABELS,
 } from "./domain";
+export type { ChatUIState } from "./chat-ui";
 export type { AnalysisContext, Feng, ShoupaiString, TileId } from "./domain";
 export type { DapaiCandidate, EvaluateShoupaiResult } from './evaluation';
 export type { ApiError } from './errors';
@@ -28,4 +29,8 @@ export type {
   RecognizeShoupaiOutput,
 } from './api';
 export type { FormatTilesInput, FormatTilesOutput } from './format-tiles';
+export type {
+  ImageRecognitionPhase,
+  ImageRecognitionState,
+} from './image-recognition';
 export { fengSchema, gameStateSchema } from './zod';

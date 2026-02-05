@@ -3,8 +3,8 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useMemo } from "react";
-import { getMessageText, toChatUIState } from "./chat-message-utils";
-import type { ChatUIState } from "./types";
+import { getMessageText, toChatUIState } from "@/utils/chat-message-utils";
+import type { ChatUIState } from "@/types";
 
 export interface UseAnalysisChatReturn {
   chatState: ChatUIState;
