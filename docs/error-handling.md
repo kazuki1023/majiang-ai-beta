@@ -38,9 +38,8 @@
 
 ## 前提
 
-- **呼び出し形態**: ブラウザから Mastra API（別オリジン）へ `fetch` で直接 `POST /api/agents/majiangAnalysisAgent/stream` を呼ぶ。
-- **現状**: `page.tsx` で `catch` し、`Error#message` をそのまま表示。AbortError のときは結果末尾に「キャンセルされました」を追記。
-  `mastra-client.ts` の `streamMajiangAnalysis` は `res.ok` でないときに body から `error.message` / `message` を読んで `throw new Error(...)` している。
+- **呼び出し形態**: ブラウザは同一オリジンの `POST /api/chat` を呼ぶ（Next が Mastra にプロキシ）。チャットは AI SDK の `useChat` で送受信する。
+- **現状**: `page.tsx` で useChat の `error` を表示。キャンセルは `stop()`。エラー時は useChat が `error` をセットし、`error.message` を表示する。
 - **未整備**: ネットワークエラー・CORS・タイムアウト・API のエラー body 形式の違いを区別していない。
 
 ---

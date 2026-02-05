@@ -57,7 +57,7 @@ export const evaluateBasicTool = createTool({
     ev: z.number().describe('評価値'),
     paishu: z.any().describe('計算に使用した牌山情報'),
   }),
-  execute: async ({ context }) => {
-    return await evaluateBasic(context);
+  execute: async ( inputData ) => {
+    return await evaluateBasic(inputData);
   },
 });

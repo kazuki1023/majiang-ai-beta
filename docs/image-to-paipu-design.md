@@ -81,7 +81,7 @@ sequenceDiagram
     User->>UI: 手牌の写真をアップロード
     UI->>GCS: 画像を保存
     GCS-->>UI: gs://... URL
-    UI->>API: POST /api/agents/imageRecognitionAgent
+    UI->>API: POST /api/generate/imageRecognitionAgent/generate（Next 経由）
     API->>GCS: 画像を取得
     API->>Vision: OCR実行
     Vision-->>API: 認識結果（生テキスト）
@@ -114,7 +114,7 @@ sequenceDiagram
     participant Gemini as Gemini API
 
     User->>UI: AI分析を実行
-    UI->>API: POST /api/agents/majiangAnalysisAgent
+    UI->>API: POST /api/chat（Next 経由）
     API->>Lib: evaluateShoupaiTool
     Lib-->>API: 評価結果（打牌候補・期待値）
     API->>Gemini: 説明文を生成
@@ -381,7 +381,7 @@ export function ImageUpload() {
 
       // 画像認識APIを呼び出し
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_MASTRA_API_URL}/api/agents/imageRecognitionAgent`,
+        "/api/generate/imageRecognitionAgent/generate",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

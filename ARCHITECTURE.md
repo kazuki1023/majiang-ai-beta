@@ -146,9 +146,9 @@ majiang-ai/
 - **デプロイ先**: Cloud Run
 - **リージョン**: asia-northeast1（東京）
 - **URL**: `https://majiang-ai-api-xxxxx.a.run.app` (例)
-- **エンドポイント**:
-  - `POST /api/agents/majiangAnalysisAgent/generate`
-  - `POST /api/agents/imageRecognitionAgent/generate`
+- **エンドポイント**（Mastra が提供）:
+  - `POST /chat`（チャット・ストリーミング。Next は `/api/chat` でプロキシ）
+  - `POST /chat/majiangAnalysisAgent/generate` 等（Next は `/api/generate/...` でプロキシ）
   - `POST /api/workflows/evaluateShoupai`
   - `GET /api/tools`
 
@@ -173,7 +173,7 @@ majiang-ai/
 
 ### 手牌分析（テキスト入力）
 
-- ブラウザは **Next.js の同一オリジン**（例: `/api/agents/...`）のみ呼ぶ。Next.js の API Route が Mastra API をプロキシする（[docs/cors-strategy.md](./docs/cors-strategy.md) 選択肢 C）。
+- ブラウザは **Next.js の同一オリジン**（`/api/chat`、`/api/generate/...`）のみ呼ぶ。Next.js の API Route が Mastra API をプロキシする（[docs/cors-strategy.md](./docs/cors-strategy.md) 選択肢 C）。
 
 ```mermaid
 sequenceDiagram
@@ -185,8 +185,8 @@ sequenceDiagram
     participant Lib as majiang-ai
 
     User->>Browser: 手牌を入力
-    Browser->>Next: POST /api/agents/.../generate 等（同一オリジン）
-    Next->>API: POST /api/agents/majiangAnalysisAgent/generate
+    Browser->>Next: POST /api/chat（同一オリジン）
+    Next->>API: POST /chat
     API->>Lib: evaluateShoupaiTool
     Lib-->>API: 評価結果
     API->>Gemini: 説明生成
@@ -210,7 +210,7 @@ sequenceDiagram
     User->>UI: 手牌画像をアップロード
     UI->>GCS: 画像を保存
     GCS-->>UI: gs://... URL
-    UI->>API: POST /api/agents/imageRecognitionAgent
+    UI->>API: POST /api/generate/imageRecognitionAgent/generate（Next 経由で Mastra にプロキシ）
     API->>GCS: 画像を取得
     API->>Vision: OCR実行
     Vision-->>API: 認識結果（生データ）

@@ -14,7 +14,7 @@
 | 項目 | 内容 |
 |------|------|
 | **認識手法** | まず **Gemini Vision のみ**で実装し、精度を検証。必要に応じて Vision OCR + Gemini 整形を検討。 |
-| **API** | `POST /api/agents/imageRecognitionAgent/generate`。body は Mastra の generate 仕様に合わせる（`messages` に `gcsUri` を content で渡す想定）。 |
+| **API** | `POST /api/generate/imageRecognitionAgent/generate`（Next が Mastra にプロキシ）。body は Mastra の generate 仕様に合わせる（`messages` に `gcsUri` を content で渡す想定）。 |
 | **GCS** | 同一バケット（`GCS_BUCKET`）のみ使用。Mastra（Cloud Run）が画像を参照するため、**サービスアカウントに GCS の roles 付与が必要**。 |
 | **Mastra** | **imageRecognitionAgent + ツール**で実装。ツール内で GCS から画像を取得し Gemini Vision に渡す。 |
 | **UI** | 「認識」クリックで imageRecognitionAgent を呼び、返ってきた手牌を**認識ボタン直下**の手牌入力 UI に渡す（タブ内の既存「手で入力」とは別）。ユーザーはアップロードした写真を見ながらその下の入力欄で編集可能。 |
@@ -53,7 +53,7 @@
 
 - [x] **1.3 Mastra への登録**
   - [x] 1.3.1 `mastra/src/mastra/index.ts` の `agents` に `imageRecognitionAgent` を追加する
-  - [ ] 1.3.2 ローカルで Mastra を起動し、`POST /api/agents/imageRecognitionAgent/generate` に `messages: [{ role: "user", content: "gs://..." }]` を送って動作確認する
+  - [ ] 1.3.2 ローカルで Mastra を起動し、`POST /api/generate/imageRecognitionAgent/generate`（Next 経由）に `messages: [{ role: "user", content: "gs://..." }]` を送って動作確認する
 
 - [x] **1.4 API 契約の明確化**
   - [x] 1.4.1 リクエスト: `{ messages: [{ role: "user", content: string }] }`。`content` に `gcsUri`（`gs://...`）をそのまま入れる
@@ -65,7 +65,7 @@
 
 - [x] **2.1 画像認識 API クライアント**
   - [x] 2.1.1 `frontend/lib/mastra-client.ts` に `generateImageRecognition(gcsUri: string)` を追加する
-  - [x] 2.1.2 `POST /api/agents/imageRecognitionAgent/generate` を呼び、body は `{ messages: [{ role: "user", content: gcsUri }] }` とする
+  - [x] 2.1.2 `POST /api/generate/imageRecognitionAgent/generate` を呼び、body は `{ messages: [{ role: "user", content: gcsUri }] }` とする
   - [x] 2.1.3 レスポンスの `text` から手牌文字列（`m...p...s...z...`）を抽出して返す
 
 - [x] **2.2 認識ボタンと認識結果用の手牌入力 UI**

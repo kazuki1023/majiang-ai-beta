@@ -168,9 +168,11 @@ gcloud auth application-default login
 | ドキュメント                                                             | 説明                          |
 | ------------------------------------------------------------------------ | ----------------------------- |
 | [README.md](./README.md)                                                 | このファイル（GCP環境の概要） |
+| [deploy-commands.md](./deploy-commands.md)                               | **Mastra / Frontend デプロイ時に実行するコマンドまとめ** |
+| [cloud-run-docker.md](./cloud-run-docker.md)                             | Cloud RunとDockerの仕組み     |
+| [cloud-run-frontend-deploy.md](./cloud-run-frontend-deploy.md)           | フロントエンドのCloud Runデプロイ手順（詳細） |
 | [iam-service-account.md](./iam-service-account.md)                       | サービスアカウントとIAMの説明 |
 | [application-default-credentials.md](./application-default-credentials.md) | ADC（ローカル認証）の説明     |
-| [cloud-run-docker.md](./cloud-run-docker.md)                             | Cloud RunとDockerの仕組み     |
 
 ---
 

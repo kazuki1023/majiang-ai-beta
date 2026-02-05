@@ -39,7 +39,7 @@ export const calculatePaishuTool = createTool({
   outputSchema: z.object({
     paishu: z.any().describe('各牌の残り枚数'),
   }),
-  execute: async ({ context }) => {
-    return await calculatePaishu(context);
+  execute: async ( inputData ) => {
+    return await calculatePaishu(inputData);
   },
 });

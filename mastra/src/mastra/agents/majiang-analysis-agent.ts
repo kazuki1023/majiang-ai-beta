@@ -4,6 +4,7 @@ import { Agent } from '@mastra/core/agent';
 import { evaluateShoupaiTool, formatTilesTool } from '../tools/eval/shoupai';
 
 export const majiangAnalysisAgent = new Agent({
+  id: 'majiang-analysis-agent',
   name: 'Majiang Analysis Agent',
   instructions: `
     あなたは麻雀の局面分析を支援するAIアシスタントです。

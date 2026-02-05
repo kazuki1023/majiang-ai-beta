@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { recognizeShoupaiFromGcsTool } from '../tools/image-recognition';
 
 export const imageRecognitionAgent = new Agent({
+  id: 'image-recognition-gemini-agent',
   name: 'Image Recognition Agent',
   instructions: `
 あなたは麻雀の手牌画像を認識するエージェントです。

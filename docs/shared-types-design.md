@@ -59,7 +59,7 @@
 
 | 境界 | 現状 | 問題例 | 該当パス（境界の実装箇所） | 関連セクション |
 |------|------|--------|----------------------------|----------------|
-| **フロント → 分析API** | 自然文 `"手牌: m123p...、場風: 東、の最適な打牌を教えてください"` を `content` で送っている | エージェントが解釈しないといけない。解釈ミスで zhuangfeng に `"S"` を渡す等。 | 自然文を組み立て: [ShoupaiInput.tsx](../frontend/components/ShoupaiInput/ShoupaiInput.tsx)（`buildAnalysisMessage`）。送信: [page.tsx](../frontend/app/page.tsx)（`handleSubmit`）→ [mastra-client.ts](../frontend/lib/mastra-client.ts)（`streamMajiangAnalysis`）。受信: [route.ts](../frontend/app/api/agents/[...path]/route.ts)（POST で body を Mastra に中継）。 | [§4.4](#section-4-4) [§6.2](#section-6-2) |
+| **フロント → 分析API** | 自然文 `"手牌: m123p...、場風: 東、の最適な打牌を教えてください"` を `content` で送っている | エージェントが解釈しないといけない。解釈ミスで zhuangfeng に `"S"` を渡す等。 | 自然文を組み立て: [ShoupaiInput.tsx](../frontend/components/ShoupaiInput/ShoupaiInput.tsx)（`buildAnalysisMessage`）。送信: [page.tsx](../frontend/app/page.tsx)（`handleSubmit`）→ useChat の `sendMessage`。受信: [route.ts](../frontend/app/api/chat/route.ts)（POST で body を Mastra /chat に中継）。 | [§4.4](#section-4-4) [§6.2](#section-6-2) |
 | **Agent → evaluateShoupaiTool** | Zod で union を多用（number \| string, boolean \| array 等） | LLM が `menfeng: "S"`, `heinfo: null`, `hongpai: []` を送り、都度スキーマを緩めている。 | エージェント定義: [majiang-analysis-agent.ts](../mastra/src/mastra/agents/majiang-analysis-agent.ts)。ツール入力スキーマ: [eval/shoupai/index.ts](../mastra/src/mastra/tools/eval/shoupai/index.ts)（`evaluateShoupaiTool` の `inputSchema`）。 | [§4.2](#section-4-2) [§6.1](#section-6-1) |
 | **Agent → formatTilesTool** | `tiles` と `shoupai` のどちらかを渡す設計だが、LLM が逆や undefined を送る | バリデーション失敗が多く、ZodUndefined 等で OpenAI スキーマ変換が落ちることも。 | ツール定義: [format-tiles.ts](../mastra/src/mastra/tools/eval/shoupai/format-tiles.ts)（`formatTilesTool` の `inputSchema`・`execute`）。 | [§4.7](#section-4-7) [§6.1](#section-6-1) |
 | **evaluateShoupaiTool → 内部関数** | context をそのまま initializePlayer 等に渡す | 変換後の型と内部の期待型が揃っていても、入口が緩いため null/配列が紛れ込む余地がある。 | ツール execute: [eval/shoupai/index.ts](../mastra/src/mastra/tools/eval/shoupai/index.ts)（`execute` 内で `initializePlayer` 等を呼ぶ）。内部: [initialize-player.ts](../mastra/src/mastra/tools/eval/shoupai/initialize-player.ts)、[calculate-paishu.ts](../mastra/src/mastra/tools/eval/shoupai/calculate-paishu.ts)、[evaluate-basic.ts](../mastra/src/mastra/tools/eval/shoupai/evaluate-basic.ts)、[evaluate-dapai-candidates.ts](../mastra/src/mastra/tools/eval/shoupai/evaluate-dapai-candidates.ts)。 | [§4.2](#section-4-2) [§6.1](#section-6-1) |
@@ -86,7 +86,7 @@ flowchart LR
     F[page / ShoupaiInput]
   end
   subgraph Next["Next API"]
-    N["/api/agents/[...path]"]
+    N["/api/chat", "/api/generate/[...path]"]
   end
   subgraph Mastra["Mastra API"]
     A[Agent]
@@ -297,7 +297,7 @@ type AnalysisStreamEvent =
 
 **分析専用エンドポイントの契約（path と body）**
 
-- **path 例**: `POST /api/analysis/stream`（分析専用。既存の `POST /api/agents/.../stream` とは別に、構造化リクエスト専用のエンドポイントを設ける場合）。
+- **path 例**: `POST /api/analysis/stream`（分析専用。既存の `POST /api/chat` とは別に、構造化リクエスト専用のエンドポイントを設ける場合）。
 - **body**: `{ context: AnalysisContext }` のみ。フロントは必須項目をバリデーションしたうえで送る。
 - 既存の Agent 用 path と両立させる場合は、body に `context` が含まれていれば分析専用フローに振り分け、そうでなければ従来の messages フローにする、などの判定を API 側で行う。
 
