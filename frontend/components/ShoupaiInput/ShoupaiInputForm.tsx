@@ -1,19 +1,26 @@
 "use client";
 
 import { ShoupaiDisplay } from "@/components/ShoupaiDisplay";
+import { TileButton } from "@/components/shoupai/TileButton";
 import { selectedTilesToShoupaiString, TILE_SET_BY_SUIT } from "@/lib/shoupai-utils";
 import type { Feng, TileId } from "@/types";
+import {
+  DEFAULT_XUN,
+  MAX_HAND,
+  MENFENG_LABELS,
+  TILES_PER_TYPE,
+  XUN_MAX,
+  XUN_MIN,
+  ZHUANGFENG_LABELS,
+} from "@/types";
 import { BaopaiSelector } from "./BaopaiSelector";
 import { LabeledButtonGroup } from "./LabeledButtonGroup";
-import { TileButton } from "./TileButton";
 
 /**
  * Presentation: 手牌入力フォームの見た目だけを担当する。
  * 牌ボタンで選択 → 選択した牌が並んで見える形式。
  * 場風・自風は共通型 Feng（0=東, 1=南, 2=西, 3=北）。
  */
-export const ZHUANGFENG_LABELS = ["東", "南", "西", "北"] as const;
-export const MENFENG_LABELS = ["東", "南", "西", "北"] as const;
 
 export interface ShoupaiInputFormProps {
   /** 選択した手牌（牌IDの配列、最大14枚） */
@@ -39,14 +46,6 @@ export interface ShoupaiInputFormProps {
   /** 「選択した手牌」ヘッダーをクリックしたときの開閉トグル */
   onToggle?: () => void;
 }
-
-const MAX_HAND = 14;
-const TILES_PER_TYPE = 4;
-
-/** 巡目: 1〜18。デフォルトは 7（親の ShoupaiInput で useState(7) を指定） */
-export const XUN_MIN = 1;
-export const XUN_MAX = 18;
-export const DEFAULT_XUN = 7;
 
 const XUN_OPTIONS = Array.from(
   { length: XUN_MAX - XUN_MIN + 1 },

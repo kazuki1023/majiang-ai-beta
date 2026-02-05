@@ -5,7 +5,16 @@
  * 注: mastra/src/mastra/types/ と同一の型定義を保つこと。
  */
 
-export type { AnalysisContext, Feng, ShoupaiString, TileId } from './domain';
+export {
+  DEFAULT_XUN,
+  MAX_HAND,
+  MENFENG_LABELS,
+  TILES_PER_TYPE,
+  XUN_MAX,
+  XUN_MIN,
+  ZHUANGFENG_LABELS,
+} from "./domain";
+export type { AnalysisContext, Feng, ShoupaiString, TileId } from "./domain";
 export type { DapaiCandidate, EvaluateShoupaiResult } from './evaluation';
 export type { ApiError } from './errors';
 export type {

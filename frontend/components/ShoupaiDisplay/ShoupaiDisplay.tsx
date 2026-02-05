@@ -1,6 +1,6 @@
 "use client";
 
-import { TileButton } from "@/components/ShoupaiInput/TileButton";
+import { TileButton } from "@/components/shoupai/TileButton";
 import { getTileLabel, shoupaiStringToTileIds } from "@/lib/shoupai-utils";
 import type { ShoupaiString } from "@/types";
 

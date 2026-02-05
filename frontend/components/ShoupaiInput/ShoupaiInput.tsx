@@ -6,13 +6,9 @@ import {
   sortTileIdsByDisplayOrder,
 } from "@/lib/shoupai-utils";
 import type { Feng, ShoupaiString, TileId } from "@/types";
+import { DEFAULT_XUN, MENFENG_LABELS, ZHUANGFENG_LABELS } from "@/types";
 import { useState } from "react";
-import {
-  DEFAULT_XUN,
-  MENFENG_LABELS,
-  ShoupaiInputForm,
-  ZHUANGFENG_LABELS,
-} from "./ShoupaiInputForm";
+import { ShoupaiInputForm } from "./ShoupaiInputForm";
 
 /**
  * Container: 手牌入力の状態とロジックを担当する。

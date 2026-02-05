@@ -13,6 +13,20 @@ export type ShoupaiString = string;
 /** 場風・自風は 0=東, 1=南, 2=西, 3=北（数値のみ） */
 export type Feng = 0 | 1 | 2 | 3;
 
+/** 場風・自風の表示ラベル（Feng の index に対応） */
+export const ZHUANGFENG_LABELS = ["東", "南", "西", "北"] as const;
+export const MENFENG_LABELS = ["東", "南", "西", "北"] as const;
+
+/** 手牌の最大枚数 */
+export const MAX_HAND = 14;
+/** 同種牌の最大枚数（通常ルール） */
+export const TILES_PER_TYPE = 4;
+
+/** 巡目: 最小・最大・デフォルト（1〜18） */
+export const XUN_MIN = 1;
+export const XUN_MAX = 18;
+export const DEFAULT_XUN = 7;
+
 /** 手牌分析の入力として必要な局情報。全境界でこの形に統一する。 */
 export interface AnalysisContext {
   /** 手牌文字列（必須） */
