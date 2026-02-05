@@ -1,5 +1,6 @@
 # mastra/Dockerfile
-FROM node:20-alpine
+# Mastra v1 は Node >= 22.13.0 必須 (https://mastra.ai/guides/migrations/upgrade-to-v1/overview)
+FROM node:22-alpine
 
 # submodulesを/appの親ディレクトリにコピー
 # /appから見て../submodules/が正しく解決されるように
