@@ -57,6 +57,7 @@ export function ShoupaiInput({
   const [menfeng, setMenfeng] = useState<Feng>(0);
   const [baopai, setBaopai] = useState<TileId[]>([]);
   const [xun, setXun] = useState(DEFAULT_XUN);
+  const [collapsed, setCollapsed] = useState(false);
 
   const handleAddTile = (tileId: TileId) => {
     setSelectedTiles((prev) => sortTileIdsByDisplayOrder([...prev, tileId]));
@@ -70,7 +71,10 @@ export function ShoupaiInput({
     e.preventDefault();
     const shoupai = selectedTilesToShoupaiString(selectedTiles);
     const content = buildAnalysisMessage(shoupai, zhuangfeng, menfeng, baopai, xun);
-    if (content) onSubmit(content);
+    if (content) {
+      onSubmit(content);
+      setCollapsed(true);
+    }
   };
 
   return (
@@ -88,6 +92,8 @@ export function ShoupaiInput({
       onXunChange={setXun}
       onSubmit={handleSubmit}
       disabled={disabled}
+      collapsed={collapsed}
+      onToggle={() => setCollapsed((prev) => !prev)}
     />
   );
 }
