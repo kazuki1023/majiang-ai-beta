@@ -89,7 +89,7 @@ export function ShoupaiInputForm({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center rounded-md gap-3 px-3 py-2.5 text-left text-sm font-medium text-zinc-700 transition-colors"
+        className="flex w-full items-center rounded-md gap-3 py-2.5 text-left text-sm font-medium text-zinc-700 transition-colors"
         aria-expanded={!collapsed}
         aria-controls="shoupai-accordion-body"
         id="shoupai-accordion-trigger"
