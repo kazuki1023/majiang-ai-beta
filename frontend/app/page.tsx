@@ -11,6 +11,15 @@ import { useMemo, useState } from "react";
 const TAB_IMAGE = "image";
 const TAB_MANUAL = "manual";
 
+/** useChat の status を UI 用にまとめる（依存はここだけ） */
+type ChatUIState = "idle" | "waiting" | "streaming";
+
+function toChatUIState(status: string): ChatUIState {
+  if (status === "submitted") return "waiting";
+  if (status === "streaming") return "streaming";
+  return "idle";
+}
+
 /** メッセージの parts から表示用テキストを結合する */
 function getMessageText(message: UIMessage): string {
   return message.parts
@@ -26,8 +35,7 @@ export default function Home() {
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
 
-  const isLoading = status === "submitted" || status === "streaming";
-  const isStreaming = status === "streaming";
+  const chatState = toChatUIState(status);
 
   const lastAssistantMessage = useMemo(() => {
     const assistant = [...messages].reverse().find((m) => m.role === "assistant");
@@ -49,9 +57,9 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 px-2 py-6 font-sans dark:bg-zinc-900 md:px-4 md:py-8">
+    <div className="min-h-screen bg-zinc-50 px-1 py-6 font-sans dark:bg-zinc-900 md:px-4 md:py-8">
       <main className="mx-auto max-w-2xl space-y-6">
-        <h1 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100">
+        <h1 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100 mb-2 md:mb-4">
           手牌分析
         </h1>
 
@@ -62,18 +70,18 @@ export default function Home() {
               <Tab value={TAB_MANUAL}>手で入力</Tab>
             </TabList>
             <TabPanel value={TAB_IMAGE}>
-              <ImageUpload onSubmit={handleSubmit} disabled={isLoading} />
+              <ImageUpload onSubmit={handleSubmit} disabled={chatState !== "idle"} />
             </TabPanel>
             <TabPanel value={TAB_MANUAL}>
-              <ShoupaiInput onSubmit={handleSubmit} disabled={isLoading} />
+              <ShoupaiInput onSubmit={handleSubmit} disabled={chatState !== "idle"} />
             </TabPanel>
           </Tabs>
         </section>
 
-        {isLoading && (
+        {chatState === "waiting" && (
           <section className="flex items-center gap-2">
             <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              表示中...
+              分析中...
             </span>
             <button
               type="button"
@@ -95,10 +103,10 @@ export default function Home() {
           </section>
         )}
 
-        {resultText && (
+        {(resultText || chatState === "streaming") && (
           <AnalysisResult
             content={resultText}
-            isStreaming={isStreaming}
+            isStreaming={chatState === "streaming"}
             title="分析結果"
           />
         )}

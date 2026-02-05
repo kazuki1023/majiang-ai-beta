@@ -1,5 +1,6 @@
 "use client";
 
+import type { Feng } from "@/types";
 /**
  * ラベル付きの選択ボタン群（場風・自風などで共通利用）
  */
@@ -11,7 +12,7 @@ export interface LabeledButtonGroupProps {
   /** 各ボタンの表示ラベル */
   options: readonly string[];
   /** 選択中のインデックス（0-based） */
-  value: number;
+  value: Feng;
   onChange: (index: number) => void;
   disabled?: boolean;
   /** 各ボタンの aria-label の接頭辞（例: "場風: "） */

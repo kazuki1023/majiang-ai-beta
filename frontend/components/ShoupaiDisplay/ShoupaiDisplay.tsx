@@ -34,9 +34,15 @@ export function ShoupaiDisplay({
 
   return (
     <div className={className}>
-      <ul className="flex flex-wrap gap-0.25 sm:gap-1.5" aria-label="手牌">
+      <ul
+        className="flex w-full flex-nowrap gap-0.5 md:gap-1.5"
+        aria-label="手牌"
+      >
         {tileIds.map((tileId, index) => (
-          <li key={`${tileId}-${index}`}>
+          <li
+            key={`${tileId}-${index}`}
+            className="shrink-0 grow-0 basis-[calc((100%-1.625rem)/14)] md:basis-[calc((100%-4.875rem)/14)]"
+          >
             <TileButton
               label={getTileLabel(tileId)}
               tileId={tileId}
@@ -44,6 +50,7 @@ export function ShoupaiDisplay({
               disabled={disabled || !onRemoveAt}
               title={onRemoveAt ? `${getTileLabel(tileId)} を削除` : undefined}
               ariaLabel={getTileLabel(tileId)}
+              className="aspect-9/14 w-full max-h-9 md:max-h-10"
             />
           </li>
         ))}

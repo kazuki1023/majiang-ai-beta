@@ -21,7 +21,7 @@ export function AnalysisResult({
   isStreaming = false,
   title = "分析結果",
 }: AnalysisResultProps) {
-  if (!content.trim()) {
+  if (!content.trim() && !isStreaming) {
     return null;
   }
 
@@ -34,7 +34,7 @@ export function AnalysisResult({
       <h2 className="mb-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">
         {title}
       </h2>
-      <MarkdownContent content={content} className="break-words text-sm" />
+      <MarkdownContent content={content} className="wrap-break-word text-sm" />
       {isStreaming && (
         <span
           className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-zinc-500 align-middle"

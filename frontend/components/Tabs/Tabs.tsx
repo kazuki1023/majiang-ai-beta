@@ -1,10 +1,10 @@
 "use client";
 
 import {
-  createContext,
-  useContext,
-  useId,
-  type ReactNode
+    createContext,
+    useContext,
+    useId,
+    type ReactNode
 } from "react";
 
 type TabsContextValue = {

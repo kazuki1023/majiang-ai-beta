@@ -24,7 +24,7 @@ export interface ShoupaiInputFormProps {
   menfeng: Feng;
   /** ドラ表示牌（牌IDの配列、順序は1枚目ドラ・2枚目カンドラ…） */
   baopai: TileId[];
-  /** 巡目（0〜18程度） */
+  /** 巡目（1〜18） */
   xun: number;
   onAddTile: (tileId: TileId) => void;
   onRemoveAt: (index: number) => void;
@@ -39,6 +39,16 @@ export interface ShoupaiInputFormProps {
 const MAX_HAND = 14;
 const TILES_PER_TYPE = 4;
 
+/** 巡目: 1〜18。デフォルトは 7（親の ShoupaiInput で useState(7) を指定） */
+export const XUN_MIN = 1;
+export const XUN_MAX = 18;
+export const DEFAULT_XUN = 7;
+
+const XUN_OPTIONS = Array.from(
+  { length: XUN_MAX - XUN_MIN + 1 },
+  (_, i) => XUN_MIN + i
+);
+
 function countInHand(selectedTiles: TileId[], tileId: TileId): number {
   return selectedTiles.filter((id) => id === tileId).length;
 }
@@ -50,10 +60,11 @@ function canAddTile(selectedTiles: TileId[], tileId: TileId): boolean {
 
 export function ShoupaiInputForm({
   selectedTiles,
-  zhuangfeng,
-  menfeng,
+  // 場風、自風、ドラ表示牌、は初期値を設定
+  zhuangfeng = 0,
+  menfeng = 0,
   baopai,
-  xun,
+  xun = DEFAULT_XUN,
   onAddTile,
   onRemoveAt,
   onZhuangfengChange,
@@ -74,13 +85,13 @@ export function ShoupaiInputForm({
           選択した手牌（{selectedTiles.length} /{MAX_HAND}）
         </label>
         <div
-          className="min-h-10 sm:min-h-12 rounded-md border border-zinc-300 bg-zinc-50/50 px-1 py-1.5 sm:px-3 sm:py-2 h-8"
+          className="min-h-10 sm:min-h-12 rounded-md border border-zinc-300 bg-zinc-50/50 px-1 py-1.5 md:px-3 md:py-2 h-8 flex items-center justify-start"
           aria-live="polite"
         >
           {selectedTiles.length === 0 ? (
-            <p className="text-sm text-zinc-500">牌を下から選んでください</p>
+            <p className="text-sm text-zinc-500 w-full">牌を下から選んでください</p>
           ) : (
-            <div className="text-sm text-zinc-500">
+            <div className="text-sm text-zinc-500 w-full">
               <ShoupaiDisplay
                 paistr={selectedTilesToShoupaiString(selectedTiles)}
                 onRemoveAt={onRemoveAt}
@@ -99,23 +110,25 @@ export function ShoupaiInputForm({
         </label>
         <div className="space-y-1.5 sm:space-y-2">
           {TILE_SET_BY_SUIT.map(({ suitLabel, tiles }) => (
-            <div key={suitLabel} className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+            <div key={suitLabel} className="flex w-full items-center gap-1 sm:gap-1.5">
               <span className="w-6 shrink-0 text-[10px] font-medium text-zinc-500 sm:w-8 sm:text-xs">
                 {suitLabel}
               </span>
-              <div className="flex flex-wrap gap-0.5 sm:gap-1">
+              <div className="flex min-w-0 flex-1 flex-wrap gap-0.5 sm:gap-1">
                 {tiles.map((tile) => {
                   const addable = canAddTile(selectedTiles, tile.id);
                   return (
-                    <TileButton
-                      key={tile.id}
-                      tileId={tile.id}
-                      label={tile.label}
-                      onClick={() => addable && onAddTile(tile.id)}
-                      disabled={disabled || !addable}
-                      title={tile.label}
-                      ariaLabel={tile.label}
-                    />
+                    <span key={tile.id} className="min-w-0 flex-1 basis-0">
+                      <TileButton
+                        tileId={tile.id}
+                        label={tile.label}
+                        onClick={() => addable && onAddTile(tile.id)}
+                        disabled={disabled || !addable}
+                        title={tile.label}
+                        ariaLabel={tile.label}
+                        className="aspect-9/14 w-full max-w-9 sm:max-w-10"
+                      />
+                    </span>
                   );
                 })}
               </div>
@@ -128,7 +141,7 @@ export function ShoupaiInputForm({
             label="場風"
             labelId="zhuangfeng-label"
             options={ZHUANGFENG_LABELS}
-            value={zhuangfeng as number}
+            value={zhuangfeng as Feng}
             onChange={(i) => onZhuangfengChange(i as Feng)}
             disabled={disabled}
             ariaLabelPrefix="場風: "
@@ -137,7 +150,7 @@ export function ShoupaiInputForm({
             label="自風"
             labelId="menfeng-label"
             options={MENFENG_LABELS}
-            value={menfeng as number}
+            value={menfeng as Feng}
             onChange={(i) => onMenfengChange(i as Feng)}
             disabled={disabled}
             ariaLabelPrefix="自風: "
@@ -151,16 +164,20 @@ export function ShoupaiInputForm({
             <label htmlFor="xun" className="block text-xs font-medium text-zinc-600">
               巡目
             </label>
-            <input
+            <select
               id="xun"
-              type="number"
-              min={0}
-              max={18}
-              value={xun}
-              onChange={(e) => onXunChange(Number(e.target.value) || 0)}
-              className="mt-0.5 w-full rounded border border-zinc-300 px-2 py-1.5 text-sm bg-white"
+              value={Math.max(XUN_MIN, Math.min(XUN_MAX, xun))}
+              onChange={(e) => onXunChange(Number(e.target.value))}
+              className="mt-0.5 w-full rounded border border-zinc-300 px-2 py-1.5 text-sm bg-white dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
               disabled={disabled}
-            />
+              aria-label="巡目"
+            >
+              {XUN_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n}巡
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
