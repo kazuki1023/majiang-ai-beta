@@ -1,5 +1,7 @@
 "use client";
 
+import { Dialog } from "@/components/ui/Dialog";
+
 export interface ConfirmDialogProps {
   open: boolean;
   title: string;
@@ -19,24 +21,18 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  if (!open) return null;
+  const handleOpenChange = (next: false) => {
+    if (!next) onCancel();
+  };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-dialog-title"
-      aria-describedby="confirm-dialog-desc"
-    >
-      <div className="w-full max-w-sm rounded-lg border border-zinc-200 bg-white p-4 shadow-lg dark:border-zinc-600 dark:bg-zinc-800">
-        <h2 id="confirm-dialog-title" className="text-base font-semibold text-zinc-800 dark:text-zinc-100">
-          {title}
-        </h2>
-        <p id="confirm-dialog-desc" className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          {message}
-        </p>
-        <div className="mt-4 flex justify-end gap-2">
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      title={title}
+      descriptionId="confirm-dialog-desc"
+      footer={
+        <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
@@ -52,7 +48,11 @@ export function ConfirmDialog({
             {confirmLabel}
           </button>
         </div>
-      </div>
-    </div>
+      }
+    >
+      <p id="confirm-dialog-desc" className="text-sm text-zinc-600 dark:text-zinc-400">
+        {message}
+      </p>
+    </Dialog>
   );
 }
