@@ -60,10 +60,11 @@ function canAddTile(selectedTiles: TileId[], tileId: TileId): boolean {
 
 export function ShoupaiInputForm({
   selectedTiles,
-  zhuangfeng,
-  menfeng,
+  // 場風、自風、ドラ表示牌、は初期値を設定
+  zhuangfeng = 0,
+  menfeng = 0,
   baopai,
-  xun,
+  xun = DEFAULT_XUN,
   onAddTile,
   onRemoveAt,
   onZhuangfengChange,

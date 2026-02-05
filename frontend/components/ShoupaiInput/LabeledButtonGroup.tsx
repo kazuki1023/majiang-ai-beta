@@ -17,8 +17,6 @@ export interface LabeledButtonGroupProps {
   disabled?: boolean;
   /** 各ボタンの aria-label の接頭辞（例: "場風: "） */
   ariaLabelPrefix?: string;
-  /** デフォルトの選択値 */
-  defaultValue?: Feng;
 }
 
 const BUTTON_BASE =
@@ -36,7 +34,6 @@ export function LabeledButtonGroup({
   onChange,
   disabled = false,
   ariaLabelPrefix = "",
-  defaultValue = 0,
 }: LabeledButtonGroupProps) {
   return (
     <div role="group" aria-labelledby={labelId}>
@@ -56,7 +53,6 @@ export function LabeledButtonGroup({
             className={`${BUTTON_BASE} ${value === i ? BUTTON_SELECTED : BUTTON_UNSELECTED}`}
             aria-pressed={value === i}
             aria-label={ariaLabelPrefix + optionLabel}
-            defaultValue={defaultValue}
           >
             {optionLabel}
           </button>
