@@ -11,6 +11,15 @@ import { useMemo, useState } from "react";
 const TAB_IMAGE = "image";
 const TAB_MANUAL = "manual";
 
+/** useChat の status を UI 用にまとめる（依存はここだけ） */
+type ChatUIState = "idle" | "waiting" | "streaming";
+
+function toChatUIState(status: string): ChatUIState {
+  if (status === "submitted") return "waiting";
+  if (status === "streaming") return "streaming";
+  return "idle";
+}
+
 /** メッセージの parts から表示用テキストを結合する */
 function getMessageText(message: UIMessage): string {
   return message.parts
@@ -26,11 +35,7 @@ export default function Home() {
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
 
-  /** レスポンスが来る前だけ表示する用（ストリーム開始したら非表示） */
-  const isWaitingForResponse = status === "submitted";
-  /** 分析送信〜ストリーム完了までフォームを無効にする用 */
-  const isPending = status === "submitted" || status === "streaming";
-  const isStreaming = status === "streaming";
+  const chatState = toChatUIState(status);
 
   const lastAssistantMessage = useMemo(() => {
     const assistant = [...messages].reverse().find((m) => m.role === "assistant");
@@ -65,15 +70,15 @@ export default function Home() {
               <Tab value={TAB_MANUAL}>手で入力</Tab>
             </TabList>
             <TabPanel value={TAB_IMAGE}>
-              <ImageUpload onSubmit={handleSubmit} disabled={isPending} />
+              <ImageUpload onSubmit={handleSubmit} disabled={chatState !== "idle"} />
             </TabPanel>
             <TabPanel value={TAB_MANUAL}>
-              <ShoupaiInput onSubmit={handleSubmit} disabled={isPending} />
+              <ShoupaiInput onSubmit={handleSubmit} disabled={chatState !== "idle"} />
             </TabPanel>
           </Tabs>
         </section>
 
-        {isWaitingForResponse && (
+        {chatState === "waiting" && (
           <section className="flex items-center gap-2">
             <span className="text-sm text-zinc-600 dark:text-zinc-400">
               分析中...
@@ -98,10 +103,10 @@ export default function Home() {
           </section>
         )}
 
-        {(resultText || isStreaming) && (
+        {(resultText || chatState === "streaming") && (
           <AnalysisResult
             content={resultText}
-            isStreaming={isStreaming}
+            isStreaming={chatState === "streaming"}
             title="分析結果"
           />
         )}
