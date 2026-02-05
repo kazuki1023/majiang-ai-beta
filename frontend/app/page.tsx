@@ -57,7 +57,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 px-2 py-6 font-sans dark:bg-zinc-900 md:px-4 md:py-8">
+    <div className="min-h-screen bg-zinc-50 px-1 py-6 font-sans dark:bg-zinc-900 md:px-4 md:py-8">
       <main className="mx-auto max-w-2xl space-y-6">
         <h1 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100 mb-2 md:mb-4">
           手牌分析
