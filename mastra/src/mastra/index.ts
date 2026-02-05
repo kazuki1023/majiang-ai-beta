@@ -2,10 +2,10 @@ import { Mastra } from '@mastra/core/mastra';
 // import { LibSQLStore } from '@mastra/libsql';
 import { PinoLogger } from '@mastra/loggers';
 import { imageRecognitionAgent } from './agents/image-recognition-agent';
-import { imageRecognitionGpt4oAgent } from './agents/image-recognition-gpt4o-agent';
+import { imageRecognitionGptAgent } from './agents/image-recognition-gpt-agent';
 import { majiangAnalysisAgent } from './agents/majiang-analysis-agent';
 import { weatherAgent } from './agents/weather-agent';
-import { completenessScorer, toolCallAppropriatenessScorer, translationScorer } from './scorers/weather-scorer';
+// import { completenessScorer, toolCallAppropriatenessScorer, translationScorer } from './scorers/weather-scorer';
 import { evaluateShoupaiWorkflow } from './workflows/evaluate-shoupai';
 import { weatherWorkflow } from './workflows/weather-workflow';
 
@@ -16,8 +16,8 @@ const allowedOrigins = [
 
 export const mastra = new Mastra({
   workflows: { weatherWorkflow, evaluateShoupaiWorkflow },
-  agents: { weatherAgent, majiangAnalysisAgent, imageRecognitionAgent, imageRecognitionGpt4oAgent },
-  scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
+  agents: { weatherAgent, majiangAnalysisAgent, imageRecognitionAgent, imageRecognitionGptAgent },
+  // scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
   server: {
     middleware: [
       {
@@ -49,12 +49,4 @@ export const mastra = new Mastra({
     name: 'Mastra',
     level: 'info',
   }),
-  telemetry: {
-    // Telemetry is deprecated and will be removed in the Nov 4th release
-    enabled: false, 
-  },
-  observability: {
-    // Enables DefaultExporter and CloudExporter for AI tracing
-    default: { enabled: true }, 
-  },
 });

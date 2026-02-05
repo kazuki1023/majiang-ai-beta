@@ -32,7 +32,7 @@ export const recognizeShoupaiFromGcsTool = createTool({
     gcsUri: z.string().describe('GCS の画像 URI。例: gs://majiang-ai-images/uploads/2025/02/04/xxx.jpg'),
   }),
   outputSchema: recognizeShoupaiOutputSchema,
-  execute: async ({ context }): Promise<RecognizeShoupaiOutput> => {
+  execute: async ( inputData ): Promise<RecognizeShoupaiOutput> => {
     const LOG_PREFIX = '[recognize-shoupai]';
 
     const apiKey = process.env.GOOGLE_API_KEY ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY;
@@ -40,9 +40,9 @@ export const recognizeShoupaiFromGcsTool = createTool({
       throw new Error('GOOGLE_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY is not set');
     }
 
-    console.log(`${LOG_PREFIX} input gcsUri=${context.gcsUri}`);
+    console.log(`${LOG_PREFIX} input gcsUri=${inputData.gcsUri}`);
 
-    const { buffer, mimeType } = await downloadImageFromGcs(context.gcsUri);
+    const { buffer, mimeType } = await downloadImageFromGcs(inputData.gcsUri);
     const base64 = buffer.toString('base64');
     console.log(`${LOG_PREFIX} image size=${buffer.length} bytes, mimeType=${mimeType}`);
 

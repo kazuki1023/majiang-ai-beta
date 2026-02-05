@@ -134,9 +134,9 @@ export const formatTilesTool = createTool({
       .describe('手牌文字列（例: "m123p1234789s3388"）。true/false は無視されます。'),
   }),
   outputSchema: z.object({ formatted: z.string() }),
-  execute: async ({ context }): Promise<FormatTilesOutput> => {
-    const rawTiles = context.tiles;
-    const rawShoupai = context.shoupai;
+  execute: async ( inputData ): Promise<FormatTilesOutput> => {
+    const rawTiles = inputData.tiles;
+    const rawShoupai = inputData.shoupai;
     const shoupaiStr = typeof rawShoupai === 'string' ? rawShoupai : undefined;
     if (typeof rawTiles === 'string' && isShoupaiString(rawTiles)) {
       return formatTiles({ shoupai: rawTiles });

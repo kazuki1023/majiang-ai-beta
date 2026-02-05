@@ -47,24 +47,24 @@ export const evaluateShoupaiTool = createTool({
     })),
     recommended: z.string().describe('推奨打牌'),
   }),
-  execute: async ({ context }): Promise<EvaluateShoupaiResult> => {
+  execute: async ( inputData ): Promise<EvaluateShoupaiResult> => {
     // 1. Player初期化（関数として直接呼び出し）
     const { player } = await initializePlayer({
-      shoupai: context.shoupai,
-      zhuangfeng: context.zhuangfeng,
-      menfeng: context.menfeng,
-      baopai: context.baopai,
-      hongpai: context.hongpai,
-      xun: context.xun,
-      heinfo: context.heinfo ?? undefined,
+      shoupai: inputData.shoupai,
+      zhuangfeng: inputData.zhuangfeng,
+      menfeng: inputData.menfeng,
+      baopai: inputData.baopai,
+      hongpai: inputData.hongpai,
+      xun: inputData.xun,
+      heinfo: inputData.heinfo ?? undefined,
     });
     
     // 2. 牌山の残り枚数を計算
     const { paishu } = await calculatePaishu({
       player,
-      xun: context.xun,
-      menfeng: context.menfeng,
-      heinfo: context.heinfo ?? undefined,
+      xun: inputData.xun,
+      menfeng: inputData.menfeng,
+      heinfo: inputData.heinfo ?? undefined,
     });
     
     // 3. 基本評価（シャンテン数と評価値）

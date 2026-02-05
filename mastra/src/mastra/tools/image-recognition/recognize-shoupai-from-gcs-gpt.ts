@@ -27,7 +27,7 @@ const recognizeShoupaiOutputSchema = z.object({
     .optional(),
 });
 
-export const recognizeShoupaiFromGcsGpt4oTool = createTool({
+export const recognizeShoupaiFromGcsGptTool = createTool({
   id: 'recognize-shoupai-from-gcs-gpt5.2',
   description:
     'GCS上の手牌画像（gs://...）を GPT-5.2 Vision で解析し、手牌文字列（例: m123p456s789z12）を返す',
@@ -35,7 +35,7 @@ export const recognizeShoupaiFromGcsGpt4oTool = createTool({
     gcsUri: z.string().describe('GCS の画像 URI'),
   }),
   outputSchema: recognizeShoupaiOutputSchema,
-  execute: async ({ context }): Promise<RecognizeShoupaiOutput> => {
+  execute: async ( inputData ): Promise<RecognizeShoupaiOutput> => {
     const LOG_PREFIX = '[recognize-shoupai-gpt5.2]';
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -43,9 +43,9 @@ export const recognizeShoupaiFromGcsGpt4oTool = createTool({
       throw new Error('OPENAI_API_KEY is not set');
     }
 
-    console.log(`${LOG_PREFIX} input gcsUri=${context.gcsUri}`);
+    console.log(`${LOG_PREFIX} input gcsUri=${inputData .gcsUri}`);
 
-    const { buffer, mimeType } = await downloadImageFromGcs(context.gcsUri);
+    const { buffer, mimeType } = await downloadImageFromGcs(inputData .gcsUri);
     const base64 = buffer.toString('base64');
     const dataUrl = `data:${mimeType};base64,${base64}`;
     console.log(`${LOG_PREFIX} image size=${buffer.length} bytes, mimeType=${mimeType}`);

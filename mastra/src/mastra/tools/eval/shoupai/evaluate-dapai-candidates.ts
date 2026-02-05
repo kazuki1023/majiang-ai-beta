@@ -129,7 +129,7 @@ export const evaluateDapaiCandidatesTool = createTool({
     })),
     recommended: z.string().describe('推奨打牌'),
   }),
-  execute: async ({ context }) => {
-    return await evaluateDapaiCandidates(context);
+  execute: async ( inputData ) => {
+    return await evaluateDapaiCandidates(inputData);
   },
 });

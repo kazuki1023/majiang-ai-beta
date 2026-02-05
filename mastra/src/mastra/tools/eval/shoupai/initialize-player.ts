@@ -121,9 +121,9 @@ export const initializePlayerTool = createTool({
       xun: z.number(),
     }),
   }),
-  execute: async ({ context }) => {
+  execute: async ( inputData ) => {
     try {
-      return await initializePlayer(context);
+      return await initializePlayer(inputData);
     } catch (error) {
       console.error('initializePlayerTool error:', error);
       throw error;
