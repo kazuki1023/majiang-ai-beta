@@ -1,6 +1,6 @@
 "use client";
 
-import { AnalysisResult } from "@/components/AnalysisResult";
+import { AnalysisResult } from "@/components/analysis/AnalysisResult";
 import { ImageUpload } from "@/components/ImageUpload";
 import { ShoupaiInput } from "@/components/ShoupaiInput";
 import { Tab, TabList, TabPanel, Tabs } from "@/components/ui/Tabs";
