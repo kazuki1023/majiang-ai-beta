@@ -1,0 +1,15 @@
+# 依存・ビルド成果物（イメージ内で npm ci / build するため除外）
+node_modules/
+frontend/node_modules
+frontend/.next
+
+# 環境変数（本番では Cloud Run 等で設定）
+.env
+.env.local
+.env*.local
+
+# その他
+.git/
+*.log
+.cursor/
+docs/

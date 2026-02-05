@@ -28,7 +28,7 @@ export const calculateXiangtingTool = createTool({
   outputSchema: z.object({
     n_xiangting: z.number().describe('シャンテン数（-1は和了形）'),
   }),
-  execute: async ({ context }) => {
-    return await calculateXiangting(context);
+  execute: async ( inputData ) => {
+    return await calculateXiangting(inputData);
   },
 });

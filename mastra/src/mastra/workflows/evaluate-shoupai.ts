@@ -1,14 +1,17 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
+import type { EvaluateShoupaiResult } from '../types';
+import { fengSchema, gameStateSchema } from '../types';
 import { calculatePaishu } from '../tools/eval/shoupai/calculate-paishu';
 import { evaluateBasic } from '../tools/eval/shoupai/evaluate-basic';
 import { evaluateDapaiCandidates } from '../tools/eval/shoupai/evaluate-dapai-candidates';
 import { initializePlayer } from '../tools/eval/shoupai/initialize-player';
 
+/** 手牌分析の入力（共通型 AnalysisContext と互換） */
 const initializePlayerInputSchema = z.object({
   shoupai: z.string().describe('手牌文字列 (例: "m123p1234789s3388")'),
-  zhuangfeng: z.number().optional().describe('場風 (0-3)'),
-  menfeng: z.number().optional().describe('自風 (0-3)'),
+  zhuangfeng: fengSchema.optional().describe('場風 (0:東 1:南 2:西 3:北)'),
+  menfeng: fengSchema.optional().describe('自風 (0:東 1:南 2:西 3:北)'),
   baopai: z.array(z.string()).optional().describe('ドラ表示牌の配列（例: ["s3", "s4"]）。重要: これは「ドラ表示牌」であり「実際のドラ」ではない。ドラ表示牌"s3"の場合、実際のドラは"s4"になる。'),
   hongpai: z.boolean().optional().describe('赤牌有無'),
   xun: z.number().optional().describe('巡目'),
@@ -18,25 +21,13 @@ const initializePlayerInputSchema = z.object({
 const initializePlayerOutputSchema = z.object({
   player: z.any().describe('初期化されたPlayerインスタンス'),
   shoupai: z.any().describe('手牌インスタンス'),
-  gameState: z.object({
-    zhuangfeng: z.number(),
-    menfeng: z.number(),
-    baopai: z.array(z.string()),
-    hongpai: z.boolean(),
-    xun: z.number(),
-  }),
+  gameState: gameStateSchema,
 });
 
 const calculatePaishuInputSchema = z.object({
   player: z.any().describe('初期化されたPlayerインスタンス'),
   shoupai: z.any().describe('手牌インスタンス'),
-  gameState: z.object({
-    zhuangfeng: z.number(),
-    menfeng: z.number(),
-    baopai: z.array(z.string()),
-    hongpai: z.boolean(),
-    xun: z.number(),
-  }).optional().describe('ゲーム状態'),
+  gameState: gameStateSchema.optional().describe('ゲーム状態'),
 });
 
 const calculatePaishuOutputSchema = z.object({
@@ -67,26 +58,31 @@ const evaluateDapaiCandidatesInputSchema = z.object({
   ev: z.number().describe('評価値'),
 });
 
+/** 打牌候補1つ（共通型 types/evaluation の DapaiCandidate に合わせる） */
+const dapaiCandidateSchema = z.object({
+  tile: z.string(),
+  n_xiangting: z.number(),
+  ev: z.number(),
+  tingpai: z.array(z.string()),
+  n_tingpai: z.number(),
+  selected: z.boolean().optional(),
+});
+
 const evaluateDapaiCandidatesOutputSchema = z.object({
   n_xiangting: z.number().describe('シャンテン数'),
   ev: z.number().describe('評価値'),
-  candidates: z.array(z.object({
-    tile: z.string().describe('打牌候補'),
-    n_xiangting: z.number().describe('打牌後のシャンテン数'),
-    ev: z.number().describe('評価値'),
-  })),
+  candidates: z.array(dapaiCandidateSchema),
   recommended: z.string().describe('推奨打牌'),
 });
 
-const evaluateShoupaiOutputSchema = z.object({
-  n_xiangting: z.number().describe('シャンテン数'),
-  ev: z.number().describe('評価値'),
-  candidates: z.array(z.object({
-    tile: z.string().describe('打牌候補'),
-    n_xiangting: z.number().describe('打牌後のシャンテン数'),
-    ev: z.number().describe('評価値'),
-  })),
-  recommended: z.string().describe('推奨打牌'),
+/** ワークフロー最終出力（共通型 EvaluateShoupaiResult に合わせる） */
+const evaluateShoupaiOutputSchema: z.ZodType<EvaluateShoupaiResult> = z.object({
+  current: z.object({
+    n_xiangting: z.number(),
+    ev: z.number(),
+  }),
+  dapai_candidates: z.array(dapaiCandidateSchema),
+  recommended: z.string(),
 });
 
 const initializePlayerStep = createStep({
@@ -152,24 +148,23 @@ const evaluateDapaiCandidatesStep = createStep({
   id: 'evaluate-dapai-candidates',
   description: '打牌候補を評価',
   inputSchema: evaluateDapaiCandidatesInputSchema,
-  outputSchema: evaluateDapaiCandidatesOutputSchema,
+  outputSchema: evaluateShoupaiOutputSchema,
   execute: async ({ inputData }) => {
-    // 前のステップからのデータを使用
     const { candidates, recommended } = await evaluateDapaiCandidates({
       player: inputData.player,
       shoupai: inputData.shoupai,
       paishu: inputData.paishu,
       n_xiangting: inputData.n_xiangting,
     });
-    // ワークフローの出力スキーマに合わせて整形
+    const dapai_candidates = candidates.map(
+      (c: { tile: string; n_xiangting: number; ev: number; tingpai: string[]; n_tingpai: number }) => ({
+        ...c,
+        selected: c.tile === recommended,
+      })
+    );
     return {
-      n_xiangting: inputData.n_xiangting,
-      ev: inputData.ev,
-      candidates: candidates.map((c: any) => ({
-        tile: c.tile,
-        n_xiangting: c.n_xiangting,
-        ev: c.ev,
-      })),
+      current: { n_xiangting: inputData.n_xiangting, ev: inputData.ev },
+      dapai_candidates,
       recommended,
     };
   },

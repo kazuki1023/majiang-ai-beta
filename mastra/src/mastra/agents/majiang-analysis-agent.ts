@@ -4,6 +4,7 @@ import { Agent } from '@mastra/core/agent';
 import { evaluateShoupaiTool, formatTilesTool } from '../tools/eval/shoupai';
 
 export const majiangAnalysisAgent = new Agent({
+  id: 'majiang-analysis-agent',
   name: 'Majiang Analysis Agent',
   instructions: `
     あなたは麻雀の局面分析を支援するAIアシスタントです。
@@ -62,6 +63,11 @@ export const majiangAnalysisAgent = new Agent({
 
     重要: 手牌、打牌、待ち牌を表示する際は、必ずformatTilesToolを使用して絶対に絵文字は使用せず、名前形式で表示してください。
     これにより、m123p1234789s3388のような形式ではなく、一萬二萬三萬のような視覚的に分かりやすい形式で表示できます。
+
+    formatTilesTool の正しい呼び出し方:
+    - 手牌文字列（例: m123p456s789）を視覚化する場合: { "shoupai": "m123p456s789" } のように shoupai に文字列だけを渡す。
+    - 牌の配列（例: 打牌1枚）を視覚化する場合: { "tiles": ["m1"] } のように tiles に文字列の配列を渡す。
+    - tiles に手牌文字列を渡したり、shoupai に true/false を渡さないこと。
   `,
   model: 'openai/gpt-5.1',
   tools: { evaluateShoupaiTool, formatTilesTool },
