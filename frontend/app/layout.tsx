@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ToastContainer } from "react-toastify";
+// import { ToastContainer } from "react-toastify";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,7 +25,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <ToastContainer />
+      {/* トーストを使う場合はコメントを外し、features/analysis 等から toast() を呼ぶ */}
+      {/* <ToastContainer /> */}
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
