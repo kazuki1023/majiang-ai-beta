@@ -118,8 +118,32 @@ export function selectedTilesToShoupaiString(tileIds: string[]): string {
 
 /**
  * 手牌文字列（m123p456...、0は赤牌 m0/p0/s0）を牌IDの配列に変換する。
- * 同種複数枚は m111 → ["m1","m1","m1"]、m05 → ["m0","m5"] のように1桁ずつ展開する。
+ *
+ * ロジック:
+ * 1. 正規表現 ([mpsz])(\d+) で「種類 + 数字列」を順にマッチ
+ * 2. 数字は1桁ずつ展開: m105 → m1, m0, m5。字牌 z は 0 および 8,9 を無視
+ * 3. 返す配列は「表示順」でソート: 数牌は 1,2,3,4, 赤(0), 5,6,7,8,9 の順（赤は4と6の間）
  */
+const SUIT_ORDER = { m: 0, p: 1, s: 2, z: 3 } as const;
+
+/** 牌IDの表示順ソート用。数牌の赤(0)は 4 と 5 の間なので 4.5 とする */
+function tileDisplayOrder(id: string): number {
+  const suit = id[0] as keyof typeof SUIT_ORDER;
+  const num = Number(id.slice(1));
+  if ((suit === "m" || suit === "p" || suit === "s") && num === 0) return 4.5;
+  return num;
+}
+
+/** 牌ID配列を表示順（萬→筒→索→字、数牌は 1..4,赤,5..9）にソートする。削除時の index と state の一致に使う */
+export function sortTileIdsByDisplayOrder(ids: string[]): string[] {
+  return [...ids].sort((a, b) => {
+    const suitA = SUIT_ORDER[a[0] as keyof typeof SUIT_ORDER] ?? 4;
+    const suitB = SUIT_ORDER[b[0] as keyof typeof SUIT_ORDER] ?? 4;
+    if (suitA !== suitB) return suitA - suitB;
+    return tileDisplayOrder(a) - tileDisplayOrder(b);
+  });
+}
+
 export function shoupaiStringToTileIds(paistr: string): string[] {
   const ids: string[] = [];
   const regex = /([mpsz])(\d+)/g;
@@ -132,5 +156,5 @@ export function shoupaiStringToTileIds(paistr: string): string[] {
       ids.push(suit + d);
     }
   }
-  return ids;
+  return sortTileIdsByDisplayOrder(ids);
 }

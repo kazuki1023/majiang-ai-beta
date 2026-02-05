@@ -1,6 +1,10 @@
 "use client";
 
-import { selectedTilesToShoupaiString, shoupaiStringToTileIds } from "@/lib/shoupai-utils";
+import {
+  selectedTilesToShoupaiString,
+  shoupaiStringToTileIds,
+  sortTileIdsByDisplayOrder,
+} from "@/lib/shoupai-utils";
 import type { Feng, ShoupaiString, TileId } from "@/types";
 import { useState } from "react";
 import {
@@ -55,7 +59,7 @@ export function ShoupaiInput({
   const [xun, setXun] = useState(DEFAULT_XUN);
 
   const handleAddTile = (tileId: TileId) => {
-    setSelectedTiles((prev) => [...prev, tileId]);
+    setSelectedTiles((prev) => sortTileIdsByDisplayOrder([...prev, tileId]));
   };
 
   const handleRemoveAt = (index: number) => {
