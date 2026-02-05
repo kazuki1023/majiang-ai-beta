@@ -116,8 +116,6 @@ export function ImageUpload({ onSubmit, disabled = false }: ImageUploadProps) {
     [phase, applyNewFile]
   );
 
-
-
   const handleConfirmCancel = useCallback(() => {
     const file = pendingNewFile;
     if (!file) {
