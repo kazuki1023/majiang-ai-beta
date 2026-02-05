@@ -1,9 +1,10 @@
 "use client";
 
-import type { Feng, ShoupaiString, TileId } from "@/types";
 import { selectedTilesToShoupaiString, shoupaiStringToTileIds } from "@/lib/shoupai-utils";
+import type { Feng, ShoupaiString, TileId } from "@/types";
 import { useState } from "react";
 import {
+  DEFAULT_XUN,
   MENFENG_LABELS,
   ShoupaiInputForm,
   ZHUANGFENG_LABELS,
@@ -32,11 +33,11 @@ function buildAnalysisMessage(
   if (!shoupai) return "";
 
   const parts: string[] = [`手牌: ${shoupai}`];
-  if (zhuangfeng !== 0 || menfeng !== 0 || baopai.length > 0 || xun !== 7) {
+  if (zhuangfeng !== 0 || menfeng !== 0 || baopai.length > 0 ) {
     parts.push(`場風: ${ZHUANGFENG_LABELS[zhuangfeng]}`);
     parts.push(`自風: ${MENFENG_LABELS[menfeng]}`);
     if (baopai.length > 0) parts.push(`ドラ表示牌: ${baopai.join(",")}`);
-    if (xun !== 7) parts.push(`巡目: ${xun}`);
+    parts.push(`巡目: ${xun}`);
   }
   parts.push("の最適な打牌を教えてください");
   return parts.join("、");
@@ -53,7 +54,7 @@ export function ShoupaiInput({
   const [zhuangfeng, setZhuangfeng] = useState<Feng>(0);
   const [menfeng, setMenfeng] = useState<Feng>(0);
   const [baopai, setBaopai] = useState<TileId[]>([]);
-  const [xun, setXun] = useState(7);
+  const [xun, setXun] = useState(DEFAULT_XUN);
 
   const handleAddTile = (tileId: TileId) => {
     setSelectedTiles((prev) => [...prev, tileId]);
