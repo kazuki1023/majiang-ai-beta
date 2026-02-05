@@ -1,11 +1,13 @@
 import { Mastra } from '@mastra/core/mastra';
 // import { LibSQLStore } from '@mastra/libsql';
+import { registerApiRoute } from '@mastra/core/server';
 import { PinoLogger } from '@mastra/loggers';
 import { imageRecognitionAgent } from './agents/image-recognition-agent';
 import { imageRecognitionGptAgent } from './agents/image-recognition-gpt-agent';
 import { majiangAnalysisAgent } from './agents/majiang-analysis-agent';
 import { weatherAgent } from './agents/weather-agent';
 // import { completenessScorer, toolCallAppropriatenessScorer, translationScorer } from './scorers/weather-scorer';
+import { chatRoute } from "@mastra/ai-sdk";
 import { evaluateShoupaiWorkflow } from './workflows/evaluate-shoupai';
 import { weatherWorkflow } from './workflows/weather-workflow';
 
@@ -39,6 +41,32 @@ export const mastra = new Mastra({
         },
       },
     ],
+    apiRoutes: [
+      chatRoute({
+        path: "/chat",
+        agent: "majiangAnalysisAgent",
+      }),
+      registerApiRoute("/generate/imageRecognitionAgent/generate", {
+        method: "POST",
+        requiresAuth: false,
+        handler: async (c) => {
+          const mastra = c.get("mastra");
+          const agent = await mastra.getAgent("imageRecognitionAgent");
+          if (!agent) {
+            return c.json({ error: { message: "imageRecognitionAgent not found" } }, 404);
+          }
+          const body = (await c.req.json()) as { messages?: Array<{ role: "user" | "assistant" | "system"; content: string }> };
+          const messages = body.messages ?? [];
+          const output = await agent.generate(messages as Parameters<typeof agent.generate>[0]);
+          return c.json({
+            text: output.text,
+            usage: output.usage,
+            finishReason: output.finishReason,
+            error: output.error ? { message: output.error.message } : undefined,
+          });
+        },
+      }),
+    ]
   },
   // vercel storage is not supported yet
   // storage: new LibSQLStore({

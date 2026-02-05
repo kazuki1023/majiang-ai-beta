@@ -5,7 +5,9 @@
 写真アップロードや手牌分析など、API の応答に時間がかかるケースでは、**ストリーミング**で回答を逐次表示することで UX が大きく向上する。  
 「写真をアップロードして、しばらく待ってから一気に結果が出る」より、「少しずつ文章が流れてくる」方が違和感が少ない。
 
-本ドキュメントでは、Mastra API の `/stream` をフロントエンドから利用する実装方針を整理する。
+**現在の実装**: AI SDK の `useChat` + `DefaultChatTransport({ api: "/api/chat" })` で Mastra の `chatRoute`（POST /chat）に接続。ストリーミングは useChat が処理する（`app/page.tsx`）。
+
+以下は Mastra API のストリーミング仕様の参考と、カスタム実装時の方針メモである。
 
 ---
 
@@ -14,9 +16,9 @@
 | 項目 | 内容 |
 |------|------|
 | **目的** | 手牌分析・画像認識など、エージェント応答をストリーミング表示する |
-| **対象 API** | `POST /api/agents/{agentName}/stream`（Mastra のストリーミング実行） |
+| **対象 API** | チャット: `POST /api/chat`（Next プロキシ → Mastra `/chat`）。generate: `POST /api/generate/{agentName}/generate` |
 | **対象エージェント** | `majiangAnalysisAgent`、将来の `imageRecognitionAgent` 等 |
-| **フロント** | Next.js（React）。チャンクを蓄積して画面に逐次表示する |
+| **フロント** | Next.js（React）。useChat がメッセージ・ストリームを管理する |
 
 ---
 
@@ -24,7 +26,7 @@
 
 ### エンドポイント
 
-- **URL**: `POST {MASTRA_API_URL}/api/agents/{agentName}/stream`
+- **URL**: チャットは `POST {MASTRA_URL}/chat`（Mastra chatRoute）。Next は `/api/chat` でプロキシする。
 - **Body**: `generate` と同様。例: `{ "messages": [{ "role": "user", "content": "..." }] }`
 - **レスポンス**: ストリーミング（SSE: Server-Sent Events または chunked 形式の想定）
 
@@ -46,7 +48,7 @@
 
 ### 要確認事項（実装前に推奨）
 
-- [ ] 実際に `POST /api/agents/majiangAnalysisAgent/stream` を叩き、**Content-Type**（`text/event-stream` か、それ以外か）を確認する
+- [ ] （参考）Mastra の `/chat` を叩いたときの **Content-Type** を確認する
 - [ ] レスポンス body の**形式**を確認する（1行1JSON の NDJSON、SSE の `data: {...}`、など）
 - [ ] 上記に合わせてフロントのパース処理を書く
 
@@ -59,12 +61,10 @@
 - **fetch + ReadableStream**: `POST` で body を送る必要があるため、`EventSource`（GET 専用）は使えない。**fetch の `response.body`（ReadableStream）** を読み、チャンクごとにパースする。
 - **AbortController**: ユーザーが「キャンセル」した場合や、アンマウント時に `AbortController.abort()` でストリームを中断する。
 
-### 2. クライアント関数の配置
+### 2. クライアント（現在）
 
-- **場所**: `lib/mastra-client.ts` に `streamMajiangAnalysis(messages, options?)` のような関数を追加する。
-- **戻り値**: 呼び出し元が `for await (chunk of streamMajiangAnalysis(...))` やコールバックでテキスト増分を受け取れるようにする。
-  - 例: `async function* streamMajiangAnalysis(...)` で AsyncGenerator を返す
-  - または: `streamMajiangAnalysis(..., { onTextDelta: (text) => { ... } })` でコールバックを受け取る
+- **場所**: `app/page.tsx` で `useChat({ transport: new DefaultChatTransport({ api: "/api/chat" }) })` を使用。
+- **送信**: `sendMessage({ text: content })`。ストリームは useChat が処理し、`messages` の最後の assistant メッセージを表示する。
 
 ### 3. レスポンスのパース
 
@@ -72,13 +72,12 @@
 - **NDJSON**（1行1JSON）の場合: 行ごとに `JSON.parse` する。
 - `type === 'text-delta'` のとき、`payload` 内のテキスト（例: `payload.textDelta` や `payload.delta`）を連結用の state に渡す。
 
-### 4. React での利用
+### 4. React での利用（現在）
 
-- **状態**: 例として `const [streamedText, setStreamedText] = useState('')` を用意する。
-- **ストリーム開始**: 送信ボタン押下時に `streamMajiangAnalysis(...)` を呼び、`text-delta` ごとに `setStreamedText(prev => prev + delta)` する。
-- **表示**: `AnalysisResult` 相当のコンポーネントで `streamedText` を Markdown またはプレーンテキストとして表示する（`react-markdown` を使う場合は、ストリーム中も随時再レンダーされる）。
-- **完了**: `finish` イベントでストリーム終了。ローディング表示をやめ、必要なら「再実行」可能にする。
-- **クライアント専用**: ストリーミング用のコンポーネントは `'use client'` とし、ブラウザでのみ実行する。
+- **状態**: `useChat` の `messages` と `status`（`streaming` でストリーム中）。
+- **ストリーム開始**: 送信ボタン押下時に `sendMessage({ text: content })` を呼ぶ。
+- **表示**: 最後の assistant メッセージの `parts` からテキストを結合し、`AnalysisResult` に渡す。
+- **完了**: `status === 'ready'` でストリーム終了。キャンセルは `stop()`。
 
 ### 5. エラー・中断
 
@@ -100,28 +99,17 @@
 
 以下を [frontend-implementation-plan.md](./frontend-implementation-plan.md) の該当フェーズに組み込むか、別タスクとして実施する。
 
-- [ ] **事前確認**
-  - [ ] `POST /api/agents/majiangAnalysisAgent/stream` を curl またはブラウザで叩き、レスポンスの Content-Type と body 形式をメモする
-  - [ ] 上記を本ドキュメントの「要確認事項」に反映する
-
-- [ ] **lib/mastra-client.ts**
-  - [ ] `streamMajiangAnalysis(messages, { signal?: AbortSignal })` を実装する
-  - [ ] fetch で `/stream` に POST し、`response.body` を ReadableStream として読む
-  - [ ] チャンクをパースし、`text-delta` のテキストを yield またはコールバックで返す
-  - [ ] `signal` を fetch の `signal` に渡し、中断可能にする
-
-- [ ] **分析 UI（手牌入力・画像アップロード後の分析）**
-  - [ ] 分析実行時に `generate` ではなく `streamMajiangAnalysis` を呼ぶように切り替える（またはオプションでストリーミングを選択可能にする）
-  - [ ] ストリーム中のテキストを state で保持し、`AnalysisResult` で逐次表示する
-  - [ ] ローディング表示を「ストリーム受信中」に変更する（任意: 「ツール実行中」なども出せる）
-  - [ ] キャンセルボタンと AbortController の連携（任意）
+- [x] **分析 UI（手牌入力・画像アップロード後の分析）**
+  - [x] 分析実行は `useChat` の `sendMessage` で `/api/chat` に送る
+  - [x] ストリーム中のテキストは `messages` の最後の assistant から取得し、`AnalysisResult` で表示
+  - [x] キャンセルは `stop()` で対応
 
 - [ ] **エラーハンドリング**
   - [ ] ストリーム途中のエラーで state を不整合にしない（例: エラー時は「途中まで表示 + エラーメッセージ」）
   - [ ] 4xx/5xx でストリームでないレスポンスが返った場合のパースと表示
 
 - [ ] **Phase 4 以降（imageRecognitionAgent）**
-  - [ ] 画像認識結果の説明文もストリーミングで表示する場合、同様に `/api/agents/imageRecognitionAgent/stream` を呼ぶ
+  - [ ] 画像認識結果の説明文もストリーミングで表示する場合、別エージェント用に useChat の api を切り替えるか、専用ルートを検討する
 
 ---
 
