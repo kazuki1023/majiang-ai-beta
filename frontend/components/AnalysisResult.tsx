@@ -21,7 +21,7 @@ export function AnalysisResult({
   isStreaming = false,
   title = "分析結果",
 }: AnalysisResultProps) {
-  if (!content.trim()) {
+  if (!content.trim() && !isStreaming) {
     return null;
   }
 

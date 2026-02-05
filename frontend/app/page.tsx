@@ -26,7 +26,10 @@ export default function Home() {
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
 
-  const isLoading = status === "submitted" || status === "streaming";
+  /** レスポンスが来る前だけ表示する用（ストリーム開始したら非表示） */
+  const isWaitingForResponse = status === "submitted";
+  /** 分析送信〜ストリーム完了までフォームを無効にする用 */
+  const isPending = status === "submitted" || status === "streaming";
   const isStreaming = status === "streaming";
 
   const lastAssistantMessage = useMemo(() => {
@@ -62,15 +65,15 @@ export default function Home() {
               <Tab value={TAB_MANUAL}>手で入力</Tab>
             </TabList>
             <TabPanel value={TAB_IMAGE}>
-              <ImageUpload onSubmit={handleSubmit} disabled={isLoading} />
+              <ImageUpload onSubmit={handleSubmit} disabled={isPending} />
             </TabPanel>
             <TabPanel value={TAB_MANUAL}>
-              <ShoupaiInput onSubmit={handleSubmit} disabled={isLoading} />
+              <ShoupaiInput onSubmit={handleSubmit} disabled={isPending} />
             </TabPanel>
           </Tabs>
         </section>
 
-        {isLoading && (
+        {isWaitingForResponse && (
           <section className="flex items-center gap-2">
             <span className="text-sm text-zinc-600 dark:text-zinc-400">
               分析中...
@@ -95,7 +98,7 @@ export default function Home() {
           </section>
         )}
 
-        {resultText && (
+        {(resultText || isStreaming) && (
           <AnalysisResult
             content={resultText}
             isStreaming={isStreaming}
