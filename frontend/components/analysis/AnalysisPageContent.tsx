@@ -27,10 +27,16 @@ export function AnalysisPageContent() {
             <Tab value={TAB_MANUAL}>手で入力</Tab>
           </TabList>
           <TabPanel value={TAB_IMAGE}>
-            <ImageUpload onSubmit={handleSubmit} disabled={chatState !== "idle"} />
+            <ImageUpload
+              onSubmit={handleSubmit}
+              submitDisabled={chatState !== "idle"}
+            />
           </TabPanel>
           <TabPanel value={TAB_MANUAL}>
-            <ShoupaiInput onSubmit={handleSubmit} disabled={chatState !== "idle"} />
+            <ShoupaiInput
+              onSubmit={handleSubmit}
+              submitDisabled={chatState !== "idle"}
+            />
           </TabPanel>
         </Tabs>
       </section>

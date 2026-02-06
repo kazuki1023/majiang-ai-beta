@@ -8,11 +8,11 @@ import { StatusMessage } from "./StatusMessage";
 export interface ImageUploadProps {
   /** 認識した手牌から分析を実行するときに呼ばれる（省略時は分析ボタンなし） */
   onSubmit?: (content: string) => void;
-  /** 分析中は true（認識結果の ShoupaiInput を disabled にする） */
-  disabled?: boolean;
+  /** 分析中は true。送信ボタンのみ無効化し、手牌の編集は許可する */
+  submitDisabled?: boolean;
 }
 
-export function ImageUpload({ onSubmit, disabled = false }: ImageUploadProps) {
+export function ImageUpload({ onSubmit, submitDisabled = false }: ImageUploadProps) {
   const {
     state,
     isBusy,
@@ -75,7 +75,7 @@ export function ImageUpload({ onSubmit, disabled = false }: ImageUploadProps) {
             key={state.recognizedShoupaiString}
             initialShoupaiString={state.recognizedShoupaiString}
             onSubmit={onSubmit ?? (() => {})}
-            disabled={disabled}
+            submitDisabled={submitDisabled}
           />
         </div>
       )}

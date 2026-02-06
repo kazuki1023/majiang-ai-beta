@@ -17,8 +17,10 @@ import { ShoupaiInputForm } from "./ShoupaiInputForm";
 export interface ShoupaiInputProps {
   /** 分析実行時に呼ばれる。content は「手牌: m123p...」形式のメッセージ本文 */
   onSubmit: (content: string) => void;
-  /** 分析中は true。親がローディング状態を渡す */
+  /** フォーム全体を無効化（入力・送信ともに不可） */
   disabled?: boolean;
+  /** 分析中は true。送信ボタンのみ無効化し、入力・編集は許可する */
+  submitDisabled?: boolean;
   /** 初期手牌（例: 画像認識結果）。渡すとその牌で入力欄を初期化し、変更時は再同期する */
   initialShoupaiString?: ShoupaiString;
 }
@@ -44,6 +46,7 @@ function buildAnalysisMessage(
 export function ShoupaiInput({
   onSubmit,
   disabled = false,
+  submitDisabled = false,
   initialShoupaiString,
 }: ShoupaiInputProps) {
   const [selectedTiles, setSelectedTiles] = useState<TileId[]>(() =>
@@ -88,6 +91,7 @@ export function ShoupaiInput({
       onXunChange={setXun}
       onSubmit={handleSubmit}
       disabled={disabled}
+      submitDisabled={submitDisabled}
       collapsed={collapsed}
       onToggle={() => setCollapsed((prev) => !prev)}
     />

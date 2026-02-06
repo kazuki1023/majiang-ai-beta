@@ -41,6 +41,8 @@ export interface ShoupaiInputFormProps {
   onXunChange: (value: number) => void;
   onSubmit: (e: React.FormEvent) => void;
   disabled?: boolean;
+  /** true のとき送信ボタンのみ無効化（分析中など）。入力・編集は許可する */
+  submitDisabled?: boolean;
   /** true のときアコーディオンを閉じる（分析送信後など）。閉じているときはヘッダー行のみ表示 */
   collapsed?: boolean;
   /** 「選択した手牌」ヘッダーをクリックしたときの開閉トグル */
@@ -76,6 +78,7 @@ export function ShoupaiInputForm({
   onXunChange,
   onSubmit,
   disabled = false,
+  submitDisabled = false,
   collapsed = false,
   onToggle,
 }: ShoupaiInputFormProps) {
@@ -214,10 +217,10 @@ export function ShoupaiInputForm({
 
             <button
               type="submit"
-              disabled={disabled || !canSubmit}
+              disabled={disabled || submitDisabled || !canSubmit}
               className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-zinc-400 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
-              {disabled ? "分析中..." : "最適な打牌を分析する"}
+              {submitDisabled ? "分析中..." : "最適な打牌を分析する"}
             </button>
           </div>
         </div>
