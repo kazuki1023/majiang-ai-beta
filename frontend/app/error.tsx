@@ -10,6 +10,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
+    // TODO: errorを本番環境ではしっかり掴みたいので、logシステムを構築して、それで記録するようにする
     console.error(error);
   }, [error]);
 
