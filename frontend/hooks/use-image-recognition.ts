@@ -132,8 +132,11 @@ export function useImageRecognition(): UseImageRecognitionReturn {
   useEffect(() => {
     if (state.phase !== "uploading") return;
     const file = uploadingFileRef.current;
+    // 防御的チェック＋型絞り込み。phase が "uploading" になるのは startWithFile 経由のみで、
+    // そのとき必ず uploadingFileRef をセットしているため、通常は null にならない。
     if (!file) return;
 
+    // fetch を開始する場合のみ runId を進め、完了時の runId チェックで古いレスポンスを無視する。
     const runId = ++runIdRef.current;
     const formData = new FormData();
     formData.append("file", file);
