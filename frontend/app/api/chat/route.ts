@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MASTRA_URL = process.env.MASTRA_URL ?? process.env.MASTRA_API_URL;
+const MASTRA_URL = process.env.MASTRA_API_URL;
 
 export const runtime = "nodejs";
 
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "MASTRA_URL (or MASTRA_API_URL) is not set. Set it in .env.local or Cloud Run.",
+          "MASTRA_API_URL is not set. Set it in .env.local or Cloud Run.",
       },
       { status: 503 }
     );

@@ -1,7 +1,7 @@
 import { Agent } from '@mastra/core/agent';
 // import { LibSQLStore } from '@mastra/libsql';
 // import { Memory } from '@mastra/memory';
-import { evaluateShoupaiTool, formatTilesTool } from '../tools/eval/shoupai';
+import { evaluateShoupaiTool } from '../tools/eval/shoupai';
 
 export const majiangAnalysisAgent = new Agent({
   id: 'majiang-analysis-agent',
@@ -46,31 +46,25 @@ export const majiangAnalysisAgent = new Agent({
       - 字牌: 
     - 場風: 場風
     - 自風: 自風
-    - ドラ: ドラ表示牌の次の牌(formatTilesToolで視覚化してください)
+    - ドラ: ドラ表示牌の次の牌
     - 巡目: 巡目
-    - ドラ表示牌: ドラ表示牌（formatTilesToolを使用して視覚化してください）
+    - ドラ表示牌: ドラ表示牌
     - ドラの残り枚数: ドラの残り枚数
 
     ### 表 (ただし評価値が高い上位3つのみ)
     | 打牌 | シャンテン数 | 評価値 | 有効牌・和了牌の待ち | 有効牌・和了牌の残り枚数 |
     |------|--------------|---------|---------|-----------------|
-    | 打牌1（formatTilesToolで視覚化） | シャンテン数1 | 評価値1 | 有効牌（formatTilesToolで視覚化）・和了牌（formatTilesToolで視覚化） | 有効牌の残り枚数・和了牌の残り枚数 |
-    | 打牌2（formatTilesToolで視覚化） | シャンテン数2 | 評価値2 | 有効牌（formatTilesToolで視覚化）・和了牌（formatTilesToolで視覚化） | 有効牌の残り枚数・和了牌の残り枚数 |
-    | 打牌3（formatTilesToolで視覚化） | シャンテン数3 | 評価値3 | 有効牌（formatTilesToolで視覚化）・和了牌（formatTilesToolで視覚化） | 有効牌の残り枚数・和了牌の残り枚数 |
+    | 打牌1 | シャンテン数1 | 評価値1 | 有効牌・和了牌 | 有効牌の残り枚数・和了牌の残り枚数 |
+    | 打牌2 | シャンテン数2 | 評価値2 | 有効牌・和了牌 | 有効牌の残り枚数・和了牌の残り枚数 |
+    | 打牌3 | シャンテン数3 | 評価値3 | 有効牌・和了牌 | 有効牌の残り枚数・和了牌の残り枚数 |
 
     ### 推奨打牌
     #### 理由
 
-    重要: 手牌、打牌、待ち牌を表示する際は、必ずformatTilesToolを使用して絶対に絵文字は使用せず、名前形式で表示してください。
-    これにより、m123p1234789s3388のような形式ではなく、一萬二萬三萬のような視覚的に分かりやすい形式で表示できます。
 
-    formatTilesTool の正しい呼び出し方:
-    - 手牌文字列（例: m123p456s789）を視覚化する場合: { "shoupai": "m123p456s789" } のように shoupai に文字列だけを渡す。
-    - 牌の配列（例: 打牌1枚）を視覚化する場合: { "tiles": ["m1"] } のように tiles に文字列の配列を渡す。
-    - tiles に手牌文字列を渡したり、shoupai に true/false を渡さないこと。
   `,
   model: 'openai/gpt-5.1',
-  tools: { evaluateShoupaiTool, formatTilesTool },
+  tools: { evaluateShoupaiTool },
   // memory: new Memory({
   //   storage: new LibSQLStore({
   //     url: 'file:../mastra.db', // path is relative to the .mastra/output directory

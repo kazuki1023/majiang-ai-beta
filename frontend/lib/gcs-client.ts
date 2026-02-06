@@ -9,6 +9,7 @@
  */
 
 import { Storage } from "@google-cloud/storage";
+import { getDatePrefix } from "@/utils/date";
 
 const bucketName = process.env.GCS_BUCKET;
 const projectId = process.env.GOOGLE_CLOUD_PROJECT;
@@ -18,17 +19,6 @@ function getStorage(): Storage {
     throw new Error("GCS_BUCKET が設定されていません");
   }
   return new Storage(projectId ? { projectId } : undefined);
-}
-
-/**
- * 日付パーティション用の YYYY/MM/DD を返す（UTC）。
- */
-function getDatePrefix(): string {
-  const now = new Date();
-  const y = now.getUTCFullYear();
-  const m = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(now.getUTCDate()).padStart(2, "0");
-  return `${y}/${m}/${d}`;
 }
 
 /**
