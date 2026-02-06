@@ -84,37 +84,48 @@ export function ShoupaiInputForm({
 }: ShoupaiInputFormProps) {
   const canSubmit =
     selectedTiles.length === 13 || selectedTiles.length === 14;
+  const isAccordion = onToggle != null;
+
+  const headerLabel = `選択した手牌（${selectedTiles.length} / ${MAX_HAND}）`;
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-2 md:gap-4">
-      {/* アコーディオンのヘッダー（常に表示。クリックで開閉） */}
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center rounded-md gap-3 py-2.5 text-left text-sm font-medium text-zinc-700 transition-colors"
-        aria-expanded={!collapsed}
-        aria-controls="shoupai-accordion-body"
-        id="shoupai-accordion-trigger"
-      >
-        <span
-          className="shrink-0 text-zinc-500 transition-transform duration-200 dark:text-zinc-400"
-          aria-hidden
-          style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)" }}
+      {/* ヘッダー: onToggle ありなら開閉ボタン＋三角、なしならラベルのみ */}
+      {isAccordion ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex w-full items-center rounded-md gap-3 py-2.5 text-left text-sm font-medium text-zinc-700 transition-colors"
+          aria-expanded={!collapsed}
+          aria-controls="shoupai-accordion-body"
+          id="shoupai-accordion-trigger"
         >
-          ▼
-        </span>
-        <span>選択した手牌（{selectedTiles.length} / {MAX_HAND}）</span>
-      </button>
+          <span
+            className="shrink-0 text-zinc-500 transition-transform duration-200 dark:text-zinc-400"
+            aria-hidden
+            style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)" }}
+          >
+            ▼
+          </span>
+          <span>{headerLabel}</span>
+        </button>
+      ) : (
+        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          {headerLabel}
+        </p>
+      )}
 
-      {/* アコーディオンの中身（手牌表示・牌セレクター・場況・分析ボタン） */}
+      {/* フォーム中身（アコーディオン時は開閉、onToggle なしのときは常に表示） */}
       <div
-        id="shoupai-accordion-body"
-        role="region"
-        aria-labelledby="shoupai-accordion-trigger"
-        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
-        style={{ gridTemplateRows: collapsed ? "0fr" : "1fr" }}
+        {...(isAccordion && {
+          id: "shoupai-accordion-body",
+          role: "region",
+          "aria-labelledby": "shoupai-accordion-trigger",
+          className: "grid transition-[grid-template-rows] duration-300 ease-in-out",
+          style: { gridTemplateRows: collapsed ? "0fr" : "1fr" },
+        })}
       >
-        <div className="min-h-0 overflow-hidden">
+        <div className={isAccordion ? "min-h-0 overflow-hidden" : undefined}>
           <div className="flex flex-col gap-2 pt-1 md:gap-4 md:pt-2">
             {/* 選択した手牌の表示 */}
             <div>
