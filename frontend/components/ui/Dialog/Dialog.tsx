@@ -37,7 +37,7 @@ export function Dialog({
   className,
 }: DialogProps) {
   const generatedId = useId();
-  const titleId = titleIdProp ?? `dialog-title-${generatedId.replace(/:/g, "")}`;
+  const titleId = titleIdProp ?? `dialog-title-${generatedId}`;
 
   const handleClose = useCallback(() => {
     onOpenChange(false);
