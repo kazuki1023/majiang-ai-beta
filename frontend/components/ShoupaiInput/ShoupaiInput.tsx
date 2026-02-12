@@ -23,6 +23,8 @@ export interface ShoupaiInputProps {
   submitDisabled?: boolean;
   /** 初期手牌（例: 画像認識結果）。渡すとその牌で入力欄を初期化し、変更時は再同期する */
   initialShoupaiString?: ShoupaiString;
+  /** アコーディオンを初期状態で閉じるか（例: 写真認識直後は true で閉じ、ユーザーが押したら開く） */
+  initialCollapsed?: boolean;
 }
 
 function buildAnalysisMessage(
@@ -48,6 +50,7 @@ export function ShoupaiInput({
   disabled = false,
   submitDisabled = false,
   initialShoupaiString,
+  initialCollapsed = false,
 }: ShoupaiInputProps) {
   const [selectedTiles, setSelectedTiles] = useState<TileId[]>(() =>
     initialShoupaiString ? shoupaiStringToTileIds(initialShoupaiString) : []
@@ -56,7 +59,7 @@ export function ShoupaiInput({
   const [menfeng, setMenfeng] = useState<Feng>(0);
   const [baopai, setBaopai] = useState<TileId[]>([]);
   const [xun, setXun] = useState(DEFAULT_XUN);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
 
   const handleAddTile = (tileId: TileId) => {
     setSelectedTiles((prev) => sortTileIdsByDisplayOrder([...prev, tileId]));

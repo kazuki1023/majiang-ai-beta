@@ -81,6 +81,7 @@ export function ImageUpload({
           <ShoupaiInput
             key={state.recognizedShoupaiString}
             initialShoupaiString={state.recognizedShoupaiString}
+            initialCollapsed={true}
             onSubmit={onSubmit ?? (() => {})}
             submitDisabled={submitDisabled}
           />
