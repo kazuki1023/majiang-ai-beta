@@ -90,4 +90,5 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
+            --service-account majiang-ai-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
             --set-env-vars "MASTRA_API_URL=${{ steps.mastra-url.outputs.url }},GCS_BUCKET=majiang-ai-images,GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}"
