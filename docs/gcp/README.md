@@ -43,13 +43,60 @@ gcloud services enable \
 
 ## Cloud Storage
 
-| 項目                 | 値                                  |
-| -------------------- | ----------------------------------- |
-| **バケット名**       | `majiang-ai-images`                 |
-| **URL**              | `gs://majiang-ai-images/`           |
-| **リージョン**       | `asia-northeast1`                   |
-| **ストレージクラス** | Standard                            |
-| **アクセス制御**     | 均一（Uniform bucket-level access） |
+開発環境と本番環境でバケットを分ける（dev / prd）。本番は既存バケット `majiang-ai-images` を使用する。
+
+| 環境 | バケット名                     | URL                                |
+|------|--------------------------------|------------------------------------|
+| 開発 | `majiang-ai-images-dev`        | `gs://majiang-ai-images-dev/`       |
+| 本番 | `majiang-ai-images`（既存）    | `gs://majiang-ai-images/`           |
+
+- **リージョン**: `asia-northeast1`（東京）
+- **ストレージクラス**: Standard
+- **アクセス制御**: 均一（Uniform bucket-level access）
+
+### バケット作成コマンド
+
+本番用は既存の `majiang-ai-images` をそのまま利用する。**開発用のみ**新規作成する。
+
+```bash
+# プロジェクト・リージョン（必要に応じて）
+gcloud config set project majiang-ai-beta
+export REGION=asia-northeast1
+
+# 開発用バケット（新規作成）
+gcloud storage buckets create gs://majiang-ai-images-dev \
+  --location=${REGION} \
+  --uniform-bucket-level-access
+```
+
+本番用バケット `majiang-ai-images` は既に存在するため作成不要。
+
+### 開発用バケットに SA のロールを付与する
+
+`majiang-ai-images-dev` にサービスアカウント `majiang-ai-sa` の権限を付与する。
+
+```bash
+# アップロード用（objectCreator）
+gcloud storage buckets add-iam-policy-binding gs://majiang-ai-images-dev \
+  --member="serviceAccount:majiang-ai-sa@majiang-ai-beta.iam.gserviceaccount.com" \
+  --role="roles/storage.objectCreator"
+
+# 読み取り用（objectViewer）※必要なら
+gcloud storage buckets add-iam-policy-binding gs://majiang-ai-images-dev \
+  --member="serviceAccount:majiang-ai-sa@majiang-ai-beta.iam.gserviceaccount.com" \
+  --role="roles/storage.objectViewer"
+```
+
+Cloud Run のデフォルト SA を使う場合は、その SA のメールアドレスに置き換える。
+
+### 環境変数（フロントエンド）
+
+| 環境   | `GCS_BUCKET` に設定する値               |
+|--------|------------------------------------------|
+| 開発   | `majiang-ai-images-dev`             |
+| 本番   | `majiang-ai-images`                      |
+
+`frontend/.env.local`（開発）および Cloud Run の環境変数（本番）で上記を設定する。
 
 ### 用途
 
@@ -121,6 +168,9 @@ gcloud auth application-default login
 | ドキュメント                                                             | 説明                          |
 | ------------------------------------------------------------------------ | ----------------------------- |
 | [README.md](./README.md)                                                 | このファイル（GCP環境の概要） |
+| [deploy-commands.md](./deploy-commands.md)                               | **Mastra / Frontend デプロイ時に実行するコマンドまとめ** |
+| [cloud-run-docker.md](./cloud-run-docker.md)                             | Cloud RunとDockerの仕組み     |
+| [cloud-run-frontend-deploy.md](./cloud-run-frontend-deploy.md)           | フロントエンドのCloud Runデプロイ手順（詳細） |
 | [iam-service-account.md](./iam-service-account.md)                       | サービスアカウントとIAMの説明 |
 | [application-default-credentials.md](./application-default-credentials.md) | ADC（ローカル認証）の説明     |
 

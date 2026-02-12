@@ -31,7 +31,7 @@ export const calculateEvTool = createTool({
   outputSchema: z.object({
     ev: z.number().describe('評価値'),
   }),
-  execute: async ({ context }) => {
-    return await calculateEv(context);
+  execute: async ( inputData ) => {
+    return await calculateEv(inputData);
   },
 });
