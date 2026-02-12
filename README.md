@@ -77,13 +77,13 @@ majiang-ai の評価エンジン（和了期待値の再帰計算）に基づい
 
 ## 今回作ったもの
 
-| 領域 | 内容 |
-|------|------|
-| **フロントエンド** | Next.js（App Router）。手牌入力・画像アップロード・分析結果表示・待ち時間ゲーム枠。 |
+| 領域               | 内容                                                                                                                                                                                                                                     |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **フロントエンド** | Next.js（App Router）。手牌入力・画像アップロード・分析結果表示・待ち時間ゲーム枠。                                                                                                                                                      |
 | **待ち時間ゲーム** | 写真認識の待ち時間（約30秒）中に表示する「**清一色何待ち**」ゲーム。`features/waiting-game/chinitsu-machi` で問題・正解は静的 JSON、正誤判定は完全一致。枠は `WaitingGameSlot`、表示開始はアップロード開始時・終了は「辞める」押下まで。 |
-| **画像認識** | 手牌画像を GCS にアップロード → Mastra の `imageRecognitionAgent`（Gemini Vision）で手牌文字列を取得 → 手牌入力に反映。 |
-| **分析 API** | Mastra の `majiangAnalysisAgent`（evaluateShoupai ツール + Gemini）を Next の API Route 経由でプロキシ。同一オリジンで CORS を避ける構成。 |
-| **インフラ** | Mastra API と Next.js をそれぞれ Cloud Run にデプロイ。画像は Cloud Storage（`majiang-ai-images`）に保存。 |
+| **画像認識**       | 手牌画像を GCS にアップロード → Mastra の `imageRecognitionAgent`（Gemini Vision）で手牌文字列を取得 → 手牌入力に反映。                                                                                                                  |
+| **分析 API**       | Mastra の `majiangAnalysisAgent`（evaluateShoupai ツール + Gemini）を Next の API Route 経由でプロキシ。同一オリジンで CORS を避ける構成。                                                                                               |
+| **インフラ**       | Mastra API と Next.js をそれぞれ Cloud Run にデプロイ。画像は Cloud Storage（`majiang-ai-images`）に保存。                                                                                                                               |
 
 詳細な設計は [docs/waiting-game-feature-design.md](./docs/waiting-game-feature-design.md) と [ARCHITECTURE.md](./ARCHITECTURE.md) を参照。
 
@@ -192,7 +192,7 @@ GOOGLE_CLOUD_PROJECT=majiang-ai-beta
 
 ## 技術的に工夫した点
 
-以下の4点を特に意識して設計・実装しています。Zenn などにそのまま転載できるよう、説明はこのセクション内で完結させています。
+以下の5点を特に意識して設計・実装しています。Zenn などにそのまま転載できるよう、説明はこのセクション内で完結させています。
 
 ### 1. CI/CD の構築
 
@@ -214,10 +214,115 @@ Frontend と Mastra API は別々の Cloud Run サービス（別オリジン）
 
 ### 4. エラーハンドリングの二分類と表示の統一
 
-- API 呼び出しで発生するエラーを **「ユーザーがどうすることもできない問題」**（ネットワーク・5xx・タイムアウト等）と **「ユーザー起因の問題」**（4xx・入力不備等）の2つに分類し、表示メッセージの方針を統一しています。
-  - **前者**: 「時間をおいて再度実行してください」系の一律メッセージにし、技術用語を出しません。
-  - **後者**: API から返ったメッセージや「入力内容を確認してください」など、解消方法が分かる文言にします。
-- 表示は **react-toastify で Toast に一本化**し、画面内の固定セクションと Toast でエラーを分けずに扱っています。Mastra や Next が返す body の形式（`error.message` / `message` 等）のばらつきは、**1 箇所の共通ロジック**（API クライアントやエラー整形ユーティリティ）で吸収し、4xx の場合は取れたメッセージをそのまま Toast に渡し、取れない場合だけフォールバックする形にしています。
+- API 呼び出しで発生するエラーを **「ユーザーがどうすることもできない問題」（ネットワーク・5xx・タイムアウト等）** と **「ユーザー起因の問題」（4xx・入力不備等）** の2つに分類し、表示メッセージの方針を統一しています。前者は「時間をおいて再度実行してください」系の一律メッセージ、後者は API から返ったメッセージや「入力内容を確認してください」など解消方法が分かる文言にし、技術用語を避けています。
+- 表示は **react-toastify で Toast に一本化**し、API の body 形式のばらつきは 1 箇所の共通ロジックで吸収する方針にしています。
+
+### 5. 写真アップロード時の画像認識：選択肢の検証と採用方針
+
+手牌写真をアップロードしたあと「どのモデルで牌を読み取るか」について、複数の選択肢を検討し、**実際に実装・検証**したうえで採用方針を決めています。Zenn ブログにそのまま転載できる形で、選択肢・メリデメ・検証方法・結果をまとめます。詳細は [docs/image-recognition-evaluation.md](./docs/image-recognition-evaluation.md) にあります。
+
+#### どのような選択肢を考えたか
+
+| 選択肢 | 概要 |
+|--------|------|
+| **Cloud Vision API（OCR）＋ Gemini 整形** | TEXT_DETECTION で画像からテキストを抽出し、Gemini で牌文字列に整形 |
+| **Cloud Vision API（ラベル検出）＋ Gemini 整形** | LABEL_DETECTION で画像内容を分類し、Gemini で牌文字列に整形 |
+| **Cloud Vision API（物体検出）＋ Gemini 整形** | OBJECT_LOCALIZATION で物体の位置・種類を検出し、Gemini で牌文字列に整形 |
+| **Gemini Vision で画像を直接認識** | 画像を Gemini に直接渡し、プロンプトで牌認識を指示。1 ステップで牌文字列を取得 |
+| **OpenAI GPT-4o / GPT-5.2 Vision** | 画像を GPT に直接渡し、プロンプトで牌認識を指示 |
+| **カスタム ML モデル（Vertex AI 等）** | 麻雀牌のデータセットで学習したモデルで検出・分類 |
+
+#### 各選択肢のメリット・デメリット
+
+| 選択肢 | メリット | デメリット |
+|--------|----------|------------|
+| **Cloud Vision OCR** | GCP 統一、既存 API で実装しやすい | 麻雀牌は「テキスト」ではないため OCR では不向き。字牌は特に難しい |
+| **Cloud Vision ラベル** | GCP 統一 | 「麻雀牌」「ゲーム」などの大まかなラベルにとどまり、個別の牌を識別できない可能性 |
+| **Cloud Vision 物体検出** | 位置情報が得られる | 麻雀牌が学習データに含まれていない可能性。牌種（萬・筒・索・字）まで識別できるか不明 |
+| **Gemini Vision 直接** | 1 ステップでシンプル。GCP 統一。麻雀の知識を持つ可能性 | 精度・並び順は検証が必要 |
+| **GPT-4o / GPT-5.2 Vision** | 高精度な画像認識が期待できる | OpenAI の追加コスト。GCP 以外のサービス依存 |
+| **カスタム ML** | 最も高精度になる可能性。完全にカスタマイズ可能 | データセット作成・学習の工数が大きい。初期段階では現実的でない |
+
+このため、**Cloud Vision 系は OCR/ラベルは不向きと判断し、物体検出は工数対効果が不明なため後回し**。**カスタム ML は見送り**。**Gemini Vision と GPT Vision 系**を実際に実装して精度を比較することにしました。
+
+#### 検証方法
+
+- **テストデータ**: 手牌のみが写った画像を 10 枚用意（スクリーンショット 5 枚・対面で撮影した写真 5 枚）。照明・角度・牌の組み合わせを変え、各画像に正解の牌文字列（例: `m12345p56s3490z22`）を付与。
+- **評価指標**: (1) **牌単位正解率** — 14 枚中何枚を正しく認識したか、(2) **完全一致率** — 14 枚すべて正しい画像の割合。あわせてレイテンシ・コストも記録。
+- **実装**: 同一のプロンプト・抽出ロジックで、旧 Gemini Vision・GPT-4o Vision・GPT-5.2 Vision・Gemini 3.0 Vision（gemini-3-flash-preview）の 4 手法を実装し、同じ 10 枚に対して実行。
+
+#### 実際の結果
+
+| 手法 | 平均精度（牌単位正解率） | 完全一致（10 枚中） | 備考 |
+|------|--------------------------|---------------------|------|
+| 旧 Gemini Vision | 74/139 ≒ **53.2%** | 0/10 | 体感 3〜5 秒。筒子・索子の混同が多い |
+| GPT-4o Vision | 81/139 ≒ **58.3%** | 0/10 | やや速いが精度は不十分 |
+| GPT-5.2 Vision | 77/139 ≒ **55.4%** | 0/10 | 同上 |
+| **Gemini 3.0 Vision（gemini-3-flash-preview）** | 128/137 ≒ **93.4%** | **4/10** | 遅い場合あり（例: 30 秒以上）。赤牌・黒牌の誤りはあるが他より圧倒的に高い |
+
+スクリーンショットのみだと Gemini 3 は約 94%、対面写真のみでも約 93% と、いずれも他手法（50〜67% 程度）を大きく上回りました。
+
+#### 採用方針
+
+**Gemini 3 Flash（gemini-3-flash-preview）** を採用しました。他モデルはレスポンスは早いものの精度が 50〜66% でした。この精度では基本ユーザーの修正が必須になってしまい、このアプリの **「ユーザーの手入力の工数を最小限にする」** という特徴を損なうものになってしまいました。Gemini 3 は遅いケースがあるものの精度が圧倒的に高かったため採用しました。
+
+ただ、他モデルに比べて時間が 10 倍以上かかってしまうというデメリットがありました。この点は以下の「待ち時間ゲーム」機能を導入することで解決しました。
+
+#### 待ち時間の UX を埋める「待ち時間ゲーム」
+
+**背景・課題**
+
+- 手牌写真をアップロードしてから認識結果が返るまで **平均 30 秒弱（体感）** かかる。
+- 当初の UI は「スピナー ＋ 「手牌を読み取っています...」」のみで、ユーザーは何もできない。
+- この **空白時間は最悪な UX** として認識されていた。一方で、精度の悪いモデルで早く返すと正答率が低く、結局ユーザーの修正が増えて UX も悪い。そこで「待ち時間を短くする」よりも、**待ち時間そのものを価値ある時間に変える** 方向で検討した。
+
+**やっていること**
+
+- アップロード開始（`uploading`）の段階から、**待ち時間中にだけ遊べるミニゲーム** を表示する。
+- 第一弾として **清一色何待ち**（問題手牌を見て待ち牌を答えるゲーム）を実装。正解・不正解と正解の表示で、待ちの形を覚えられる。
+- 認識が終わっても **即閉じない**。ユーザーが「辞める」を押すか、問題を解き終えて手牌入力に移るまで表示を維持し、「認識完了と同時にゲームが消える」という突然終了を避ける。
+
+**技術的な設計の要点**（詳細は [docs/waiting-game-feature-design.md](./docs/waiting-game-feature-design.md)）
+
+- **なぜ「枠」と「ゲーム」で分けたか**  
+  他のゲーム（清一色何待ち以外）も同じ待ち時間中に表示できるようにするため、**「枠」用の feature**（いつ表示するか・どのゲームを表示するか・辞めるボタンなど共通 UI）と **「ゲーム」用の feature**（清一色何待ち・将来的な「ここから何切る」アンケートなど、1 ゲーム＝1 フォルダ）を分けています。枠が「今どれを表示するか」を決めてゲームの中身を差し込む形にすることで、ゲームの追加・差し替えが枠の実装に依存しません。
+
+- **課金・新ゲーム追加を見据えた薄いラッパー**  
+  今後、課金機能（解禁ゲーム・ヒントなど）や新ゲームを足すときは、**features 側で server components を薄いラッパー**として置きます。例えば「利用可能なゲーム一覧」「ユーザーの課金状態」を server で取得し、その結果をゲームに渡す。画面を描画する components は「渡された中身を表示するだけ」にし、どのゲームを出すか・課金で何を変えるかはすべて features の責務に閉じます。こうしておくと、課金やゲーム種類の変更が components に波及しません。
+
+- **表示の開始・終了**  
+  表示開始は写真アップロード開始後（認識処理が始まったとき）。表示終了は **ユーザーが「辞める」を押すまで** で、認識が終わっただけでは閉じません。そうすることで「認識完了と同時にゲームが消える」という違和感を避けています。
+
+- **データ**  
+  現状は問題・正解を静的データ（JSON）で持ち、正誤は完全一致で判定。将来は server から設定・課金情報を取得し、ゲームに渡す形を想定しています。
+
+**関連するファイル（frontend の構成）**
+
+```
+frontend/
+├── features/
+│   ├── analysis/
+│   │   └── analysis-page.tsx      # Server Component。getGameId() → getGameContent(gameId) で ReactNode を組み立て、AnalysisPageContent に渡す薄いラッパー
+│   └── waiting-game/
+│       ├── get-game-id.ts         # 「どのゲームを表示するか」を返す（現状は固定。将来は課金・ユーザー設定を参照）
+│       ├── get-game-content.tsx   # gameId に応じてゲームの ReactNode を返す（枠が差し込む中身）
+│       ├── types.ts               # GameId など
+│       ├── WaitingGameContent.tsx # 枠＋中身を組み立てるクライアント側
+│       ├── index.ts
+│       └── chinitsu-machi/        # 1 ゲーム = 1 フォルダ
+│           ├── ChinitsuMachiGame.tsx
+│           ├── index.tsx
+│           └── data/
+│               └── questions.json # 問題・正解の静的データ
+└── components/
+    ├── analysis/
+    │   └── AnalysisPageContent.tsx  # 表示条件（showWaitingGame）を持ち、渡された waitingGameContent を表示するだけ
+    └── waiting-game/
+        ├── WaitingGameSlot.tsx      # 枠 UI（children + onDismiss、辞めるボタン）
+        └── WaitingGameWithDismiss.tsx  # 「辞める」で閉じる状態を持つ client ラッパー
+```
+
+このように **「待ち時間＝何もできない時間」ではなく「学び・遊びの時間」に転換する** ことで、Gemini 3 の遅さを UX 上の弱点にせず、特徴にしています。
 
 ---
 
@@ -334,14 +439,14 @@ sequenceDiagram
 
 ## ドキュメント（docs/）
 
-| ドキュメント | 内容 |
-|--------------|------|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | アーキテクチャ・データフロー・デプロイ・実装ステップ |
-| [docs/gcp/README.md](./docs/gcp/README.md) | GCP プロジェクト・API・環境変数・バケット |
-| [docs/gcp/deploy-commands.md](./docs/gcp/deploy-commands.md) | Mastra / Frontend の Cloud Run デプロイコマンド一覧 |
-| [docs/gcp/application-default-credentials.md](./docs/gcp/application-default-credentials.md) | ローカル開発用 ADC の設定 |
-| [docs/waiting-game-feature-design.md](./docs/waiting-game-feature-design.md) | 待ち時間ゲームの設計・枠とゲームの責務 |
-| [docs/cors-strategy.md](./docs/cors-strategy.md) | CORS 方針（同一オリジン・プロキシ） |
-| [docs/image-recognition-evaluation.md](./docs/image-recognition-evaluation.md) | 画像認識の精度検証 |
+| ドキュメント                                                                                 | 内容                                                 |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| [ARCHITECTURE.md](./ARCHITECTURE.md)                                                         | アーキテクチャ・データフロー・デプロイ・実装ステップ |
+| [docs/gcp/README.md](./docs/gcp/README.md)                                                   | GCP プロジェクト・API・環境変数・バケット            |
+| [docs/gcp/deploy-commands.md](./docs/gcp/deploy-commands.md)                                 | Mastra / Frontend の Cloud Run デプロイコマンド一覧  |
+| [docs/gcp/application-default-credentials.md](./docs/gcp/application-default-credentials.md) | ローカル開発用 ADC の設定                            |
+| [docs/waiting-game-feature-design.md](./docs/waiting-game-feature-design.md)                 | 待ち時間ゲームの設計・枠とゲームの責務               |
+| [docs/cors-strategy.md](./docs/cors-strategy.md)                                             | CORS 方針（同一オリジン・プロキシ）                  |
+| [docs/image-recognition-evaluation.md](./docs/image-recognition-evaluation.md)               | 画像認識の精度検証                                   |
 
 その他、[docs/](./docs/) 配下にフロントエンド実装計画・UI 設計・ストリーミングなど多数あり。
