@@ -1,0 +1,1 @@
+export { ChinitsuMachiGame } from "./ChinitsuMachiGame";

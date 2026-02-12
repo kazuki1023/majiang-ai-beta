@@ -1,7 +1,10 @@
 "use client";
 
 import { generateImageRecognition } from "@/lib/mastra-client";
-import type { ImageRecognitionState } from "@/types";
+import type {
+  ImageRecognitionPhase,
+  ImageRecognitionState,
+} from "@/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const initialState: ImageRecognitionState = {
@@ -68,7 +71,7 @@ export interface PendingReplace {
 export interface UseImageRecognitionReturn {
   state: ImageRecognitionState;
   isBusy: boolean;
-  statusPhase: "uploading" | "recognizing" | null;
+  statusPhase: ImageRecognitionPhase;
   pendingReplace: PendingReplace;
   startWithFile: (file: File) => void;
   confirmReplace: () => void;
@@ -188,12 +191,7 @@ export function useImageRecognition(): UseImageRecognitionReturn {
 
   const isBusy =
     state.phase === "uploading" || state.phase === "recognizing";
-  const statusPhase: "uploading" | "recognizing" | null =
-    state.phase === "uploading"
-      ? "uploading"
-      : state.phase === "recognizing"
-        ? "recognizing"
-        : null;
+  const statusPhase: ImageRecognitionPhase = state.phase;
 
   return {
     state,

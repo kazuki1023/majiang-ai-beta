@@ -21,10 +21,12 @@ export interface TileButtonProps {
   ariaLabel?: string;
   /** サイズ・レイアウト用。未指定時はデフォルトサイズ（h-7 w-4.5 等） */
   className?: string;
+  /** true のときは disabled でも opacity を下げない（表示専用でボタンとして使わない場合用） */
+  preserveOpacityWhenDisabled?: boolean;
 }
 
 const TILE_BUTTON_BASE =
-  "flex items-center justify-center font-medium text-zinc-800 shadow-sm hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40";
+  "flex items-center justify-center font-medium text-zinc-800 shadow-sm hover:bg-zinc-100 disabled:cursor-not-allowed";
 const TILE_BUTTON_DEFAULT_SIZE =
   "h-7 w-4.5 mobile:h-8 mobile:w-5 md:h-10 md:w-7";
 
@@ -36,14 +38,16 @@ export function TileButton({
   title,
   ariaLabel,
   className,
+  preserveOpacityWhenDisabled = false,
 }: TileButtonProps) {
   const sizeClass = className ?? TILE_BUTTON_DEFAULT_SIZE;
+  const opacityClass = preserveOpacityWhenDisabled ? "" : "disabled:opacity-40";
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`${TILE_BUTTON_BASE} ${sizeClass}`.trim()}
+      className={`${TILE_BUTTON_BASE} ${opacityClass} ${sizeClass}`.trim()}
       title={title ?? label}
       aria-label={ariaLabel ?? label}
     >

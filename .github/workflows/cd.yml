@@ -1,0 +1,101 @@
+# CD: main に push（merge 含む）されたときに Mastra → Frontend の順で Cloud Run にデプロイ
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+env:
+  PROJECT_ID: majiang-ai-beta
+  REGION: asia-northeast1
+  AR_REPO: majiang-ai-repo
+  # CD 用サービスアカウント（OIDC 利用時はこの SA に Workload Identity を紐付ける）
+  SERVICE_ACCOUNT_EMAIL: github-actions-deploy@majiang-ai-beta.iam.gserviceaccount.com
+
+jobs:
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # OIDC 利用時に必要
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # 認証: WIF_PROVIDER が設定されていれば OIDC、なければ GCP_SA_KEY（JSON キー）
+      - name: Authenticate to Google Cloud (OIDC)
+        if: secrets.WIF_PROVIDER != ''
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Authenticate to Google Cloud (JSON Key)
+        if: secrets.WIF_PROVIDER == ''
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      # --- Mastra (API) ---
+      - name: Build Mastra image
+        run: |
+          docker build --platform linux/amd64 \
+            -f mastra/Dockerfile \
+            -t majiang-ai-api:latest .
+
+      - name: Tag and push Mastra image
+        run: |
+          docker tag majiang-ai-api:latest \
+            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/majiang-ai-api:latest
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/majiang-ai-api:latest
+
+      - name: Deploy Mastra to Cloud Run
+        run: |
+          gcloud run deploy majiang-ai-api \
+            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/majiang-ai-api:latest \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --service-account majiang-ai-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+
+      - name: Get Mastra service URL
+        id: mastra-url
+        run: |
+          MASTRA_URL=$(gcloud run services describe majiang-ai-api --region ${{ env.REGION }} --format='value(status.url)')
+          echo "url=${MASTRA_URL}" >> $GITHUB_OUTPUT
+          echo "Mastra URL: ${MASTRA_URL}"
+
+      # --- Frontend ---
+      - name: Build Frontend image
+        run: |
+          docker build --platform linux/amd64 \
+            -f frontend/Dockerfile \
+            -t majiang-ai-frontend:latest .
+
+      - name: Tag and push Frontend image
+        run: |
+          docker tag majiang-ai-frontend:latest \
+            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/majiang-ai-frontend:latest
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/majiang-ai-frontend:latest
+
+      - name: Deploy Frontend to Cloud Run
+        run: |
+          gcloud run deploy majiang-ai-frontend \
+            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/majiang-ai-frontend:latest \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --set-env-vars "MASTRA_API_URL=${{ steps.mastra-url.outputs.url }},GCS_BUCKET=majiang-ai-images,GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}"

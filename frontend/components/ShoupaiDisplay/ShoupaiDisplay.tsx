@@ -48,6 +48,7 @@ export function ShoupaiDisplay({
               tileId={tileId}
               onClick={() => onRemoveAt?.(index)}
               disabled={disabled || !onRemoveAt}
+              preserveOpacityWhenDisabled={!onRemoveAt}
               title={onRemoveAt ? `${getTileLabel(tileId)} を削除` : undefined}
               ariaLabel={getTileLabel(tileId)}
               className="aspect-9/14 w-full max-h-9 md:max-h-10"

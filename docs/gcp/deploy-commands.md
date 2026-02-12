@@ -57,10 +57,12 @@ docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/majiang-ai-repo/majiang-ai-ap
 
 ### 1.3 Cloud Run にデプロイ
 
-環境変数（`GOOGLE_API_KEY` 等）は Secret Manager または `--set-env-vars` で渡す。  
+環境変数（`GOOGLE_API_KEY` 等）は Secret Manager または `--set-env-vars` で渡す。
 GCS・Gemini 利用の場合はサービスアカウント `majiang-ai-sa` を指定する。
 
 ```bash
+export PROJECT_ID=majiang-ai-beta
+export REGION=asia-northeast1
 gcloud run deploy majiang-ai-api \
   --image ${REGION}-docker.pkg.dev/${PROJECT_ID}/majiang-ai-repo/majiang-ai-api:latest \
   --region ${REGION} \
@@ -114,6 +116,8 @@ docker build --platform linux/amd64 \
 ### 2.2 タグ付けと push
 
 ```bash
+export PROJECT_ID=majiang-ai-beta
+export REGION=asia-northeast1
 docker tag majiang-ai-frontend:latest \
   ${REGION}-docker.pkg.dev/${PROJECT_ID}/majiang-ai-repo/majiang-ai-frontend:latest
 
@@ -125,14 +129,14 @@ docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/majiang-ai-repo/majiang-ai-fr
 `MASTRA_API_URL` には [1.4](#14-デプロイ後の-url-取得) で取得した Mastra の URL を指定する。
 
 ```bash
-# MASTRA_API_URL は Mastra デプロイ後の URL に置き換える
+export PROJECT_ID=majiang-ai-beta
+export REGION=asia-northeast1
 gcloud run deploy majiang-ai-frontend \
   --image ${REGION}-docker.pkg.dev/${PROJECT_ID}/majiang-ai-repo/majiang-ai-frontend:latest \
   --region ${REGION} \
   --platform managed \
   --allow-unauthenticated \
   --port 8080 \
-  --set-env-vars "MASTRA_API_URL=https://majiang-ai-api-xxxxx.run.app,GCS_BUCKET=majiang-ai-images,GOOGLE_CLOUD_PROJECT=${PROJECT_ID}"
 ```
 
 Secret Manager を使う場合は [cloud-run-frontend-deploy.md §4.4.4 方法 C](./cloud-run-frontend-deploy.md#方法-c-secret-manager-で管理する推奨) を参照。
