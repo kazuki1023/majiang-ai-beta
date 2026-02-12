@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { AnalysisResult } from "@/components/analysis/AnalysisResult";
 import { ImageUpload } from "@/components/ImageUpload";
 import { ShoupaiInput } from "@/components/ShoupaiInput";
@@ -8,6 +7,7 @@ import { Tab, TabList, TabPanel, Tabs } from "@/components/ui/Tabs";
 import { WaitingGameSlot } from "@/components/waiting-game/WaitingGameSlot";
 import { useAnalysisChat } from "@/hooks/use-analysis-chat";
 import { useImageRecognition } from "@/hooks/use-image-recognition";
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { ChatErrorAlert } from "./ChatErrorAlert";
 import { ChatStatusBar } from "./ChatStatusBar";
@@ -67,18 +67,18 @@ export function AnalysisPageContent({
 
       {error && <ChatErrorAlert error={error} />}
 
-      {showWaitingGame && waitingGameContent != null && (
-        <WaitingGameSlot onDismiss={() => setShowWaitingGame(false)}>
-          {waitingGameContent}
-        </WaitingGameSlot>
-      )}
-
       {(resultText || chatState === "streaming") && (
         <AnalysisResult
           content={resultText}
           isStreaming={chatState === "streaming"}
           title="分析結果"
         />
+      )}
+
+      {showWaitingGame && waitingGameContent != null && (
+        <WaitingGameSlot onDismiss={() => setShowWaitingGame(false)}>
+          {waitingGameContent}
+        </WaitingGameSlot>
       )}
     </>
   );

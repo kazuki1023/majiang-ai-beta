@@ -1,6 +1,8 @@
 "use client";
 
 import { ShoupaiDisplay } from "@/components/ShoupaiDisplay";
+import { BaopaiSelector } from "@/components/shoupai/BaopaiSelector";
+import { FengButtonGroup } from "@/components/shoupai/FengButtonGroup";
 import { TileButton } from "@/components/shoupai/TileButton";
 import { selectedTilesToShoupaiString, TILE_SET_BY_SUIT } from "@/lib/shoupai-utils";
 import type { Feng, TileId } from "@/types";
@@ -13,8 +15,6 @@ import {
   XUN_MIN,
   ZHUANGFENG_LABELS,
 } from "@/types";
-import { BaopaiSelector } from "@/components/shoupai/BaopaiSelector";
-import { FengButtonGroup } from "@/components/shoupai/FengButtonGroup";
 
 /**
  * Presentation: 手牌入力フォームの見た目だけを担当する。
@@ -86,10 +86,30 @@ export function ShoupaiInputForm({
     selectedTiles.length === 13 || selectedTiles.length === 14;
   const isAccordion = onToggle != null;
 
-  const headerLabel = `選択した手牌（${selectedTiles.length} / ${MAX_HAND}）`;
+  const headerLabel = `修正する場合は手牌をクリック`;
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-2 md:gap-4">
+      {/* 選択した手牌の表示 */}
+      <div>
+        <div
+          className="min-h-10 sm:min-h-12 rounded-md border border-zinc-300 bg-zinc-50/50 px-1 py-1.5 md:px-3 md:py-2 h-8 flex items-center justify-start dark:border-zinc-600 dark:bg-zinc-800/50"
+          aria-live="polite"
+        >
+          {selectedTiles.length === 0 ? (
+            <p className="text-sm text-zinc-500 w-full dark:text-zinc-400">牌を下から選んでください</p>
+          ) : (
+            <div className="text-sm text-zinc-500 w-full dark:text-zinc-400">
+              <ShoupaiDisplay
+                paistr={selectedTilesToShoupaiString(selectedTiles)}
+                onRemoveAt={onRemoveAt}
+                disabled={disabled}
+                className=""
+              />
+            </div>
+          )}
+        </div>
+      </div>
       {/* ヘッダー: onToggle ありなら開閉ボタン＋三角、なしならラベルのみ */}
       {isAccordion ? (
         <button
@@ -127,26 +147,6 @@ export function ShoupaiInputForm({
       >
         <div className={isAccordion ? "min-h-0 overflow-hidden" : undefined}>
           <div className="flex flex-col gap-2 pt-1 md:gap-4 md:pt-2">
-            {/* 選択した手牌の表示 */}
-            <div>
-              <div
-                className="min-h-10 sm:min-h-12 rounded-md border border-zinc-300 bg-zinc-50/50 px-1 py-1.5 md:px-3 md:py-2 h-8 flex items-center justify-start dark:border-zinc-600 dark:bg-zinc-800/50"
-                aria-live="polite"
-              >
-                {selectedTiles.length === 0 ? (
-                  <p className="text-sm text-zinc-500 w-full dark:text-zinc-400">牌を下から選んでください</p>
-                ) : (
-                  <div className="text-sm text-zinc-500 w-full dark:text-zinc-400">
-                    <ShoupaiDisplay
-                      paistr={selectedTilesToShoupaiString(selectedTiles)}
-                      onRemoveAt={onRemoveAt}
-                      disabled={disabled}
-                      className=""
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* 牌セレクター（suit ごとに列で表示） */}
             <div>
@@ -226,16 +226,17 @@ export function ShoupaiInputForm({
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={disabled || submitDisabled || !canSubmit}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-zinc-400 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-              {submitDisabled ? "分析中..." : "最適な打牌を分析する"}
-            </button>
+
           </div>
         </div>
       </div>
+      <button
+        type="submit"
+        disabled={disabled || submitDisabled || !canSubmit}
+        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-zinc-400 dark:bg-blue-500 dark:hover:bg-blue-600"
+      >
+        {submitDisabled ? "分析中..." : "最適な打牌を分析する"}
+      </button>
     </form>
   );
 }
