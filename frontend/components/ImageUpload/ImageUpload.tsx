@@ -1,18 +1,24 @@
 "use client";
 
-import { useImageRecognition } from "@/hooks/use-image-recognition";
 import { ShoupaiInput } from "@/components/ShoupaiInput";
+import type { UseImageRecognitionReturn } from "@/hooks/use-image-recognition";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { StatusMessage } from "./StatusMessage";
 
 export interface ImageUploadProps {
+  /** 画像認識の状態・操作。親（AnalysisPageContent）で useImageRecognition を呼び、渡す */
+  imageRecognition: UseImageRecognitionReturn;
   /** 認識した手牌から分析を実行するときに呼ばれる（省略時は分析ボタンなし） */
   onSubmit?: (content: string) => void;
   /** 分析中は true。送信ボタンのみ無効化し、手牌の編集は許可する */
   submitDisabled?: boolean;
 }
 
-export function ImageUpload({ onSubmit, submitDisabled = false }: ImageUploadProps) {
+export function ImageUpload({
+  imageRecognition,
+  onSubmit,
+  submitDisabled = false,
+}: ImageUploadProps) {
   const {
     state,
     isBusy,
@@ -21,7 +27,7 @@ export function ImageUpload({ onSubmit, submitDisabled = false }: ImageUploadPro
     handleFileSelect,
     confirmReplace,
     dismissReplace,
-  } = useImageRecognition();
+  } = imageRecognition;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,15 +60,16 @@ export function ImageUpload({ onSubmit, submitDisabled = false }: ImageUploadPro
               className="block max-h-48 w-auto object-contain sm:max-h-64"
             />
           </div>
-          {statusPhase && (
-            <div className="flex items-center gap-2">
-              <span
-                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600 dark:border-zinc-600 dark:border-t-zinc-400"
-                aria-hidden
-              />
-              <StatusMessage phase={statusPhase} />
-            </div>
-          )}
+          {isBusy &&
+            (statusPhase === "uploading" || statusPhase === "recognizing") && (
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600 dark:border-zinc-600 dark:border-t-zinc-400"
+                  aria-hidden
+                />
+                <StatusMessage phase={statusPhase} />
+              </div>
+            )}
         </div>
       )}
 
