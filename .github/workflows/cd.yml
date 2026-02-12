@@ -18,26 +18,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write  # OIDC 利用時に必要
+      id-token: write # OIDC 利用時に必要
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      # 認証: WIF_PROVIDER が設定されていれば OIDC、なければ GCP_SA_KEY（JSON キー）
       - name: Authenticate to Google Cloud (OIDC)
-        if: secrets.WIF_PROVIDER != ''
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ env.SERVICE_ACCOUNT_EMAIL }}
-
-      - name: Authenticate to Google Cloud (JSON Key)
-        if: secrets.WIF_PROVIDER == ''
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
