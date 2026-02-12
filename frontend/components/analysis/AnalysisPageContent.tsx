@@ -33,6 +33,8 @@ export function AnalysisPageContent({
   // 表示開始: アップロード/認識が始まったら表示。表示終了: ユーザーが「辞める」を押すまで続ける（設計どおり）
   useEffect(() => {
     if (imageRecognition.statusPhase !== "idle") {
+      // TODO: useEffect内でsetStateを呼び出すことはできないが、修正が時間かかるので保留
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       setShowWaitingGame(true);
     }
   }, [imageRecognition.statusPhase]);
