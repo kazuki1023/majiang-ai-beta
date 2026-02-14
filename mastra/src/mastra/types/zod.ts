@@ -6,13 +6,11 @@
 
 import { z } from 'zod';
 
-/** 場風・自風（共通型 Feng = 0|1|2|3）。AnalysisContext と型を揃えるため number ではなくリテラルに制限。 */
-export const fengSchema = z.union([
-  z.literal(0),
-  z.literal(1),
-  z.literal(2),
-  z.literal(3),
-]);
+/**
+ * 場風・自風（共通型 Feng = 0|1|2|3）。
+ * Gemini API は enum に文字列のみ許可するため、anyOf+数値enumではなく number の範囲で定義する。
+ */
+export const fengSchema = z.number().int().min(0).max(3);
 
 /** ワークフロー内で渡す gameState。AnalysisContext の部分型に相当（共通型 domain）。 */
 export const gameStateSchema = z.object({

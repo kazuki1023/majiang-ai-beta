@@ -63,7 +63,7 @@ export const majiangAnalysisAgent = new Agent({
 
 
   `,
-  model: 'openai/gpt-5.1',
+  model: 'google/gemini-3-flash-preview',
   tools: { evaluateShoupaiTool },
   // memory: new Memory({
   //   storage: new LibSQLStore({

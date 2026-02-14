@@ -1,11 +1,9 @@
 [
-  { "shoupai": "m2223445567788", "answer": "78" },
-  { "shoupai": "s2233447777888", "answer": "69" },
-  { "shoupai": "p2333344556788", "answer": "68" },
-  { "shoupai": "m1122233456789", "answer": "123" },
-  { "shoupai": "p1112345667788", "answer": "47" },
-  { "shoupai": "s2334567788999", "answer": "14" },
+  { "shoupai": "m2223445567788", "answer": "7,8" },
+  { "shoupai": "s2233447777888", "answer": "6,9" },
+  { "shoupai": "m1122233456789", "answer": "1,2.3" },
+  { "shoupai": "p1112345667788", "answer": "2,3,5,6,8,9" },
+  { "shoupai": "s2334567788999", "answer": "1,4" },
   { "shoupai": "m1122556677889", "answer": "9" },
-  { "shoupai": "p1122233477999", "answer": "3" },
-  { "shoupai": "s1344445566788", "answer": "0" }
+  { "shoupai": "p1122233477999", "answer": "3" }
 ]
